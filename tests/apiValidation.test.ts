@@ -1,0 +1,3 @@
+import { describe, expect, it } from "vitest";
+import { searchRequestSchema } from "../src/lib/search/validation";
+describe("search API validation", () => { it("applies safe defaults", () => expect(searchRequestSchema.parse({ query: "retaliation question" })).toMatchObject({ queryType: "HYBRID", numResults: 20 })); it("rejects missing, huge, or unsupported queries", () => { expect(searchRequestSchema.safeParse({ query: "" }).success).toBe(false); expect(searchRequestSchema.safeParse({ query: "a".repeat(2001) }).success).toBe(false); expect(searchRequestSchema.safeParse({ query: "valid query", queryType: "MAGIC" }).success).toBe(false); }); });

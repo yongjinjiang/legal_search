@@ -1,0 +1,15 @@
+.DS_Store
+.venv/
+__pycache__/
+*.pyc
+node_modules/
+.next/
+*.tsbuildinfo
+.vercel/
+.env
+.env.*
+!.env.example
+data/raw_pdfs/
+data/extracted_text/
+data/chunks/*.parquet
+data/chunks/*.csv
