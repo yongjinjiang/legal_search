@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import shutil
 from collections import Counter
 from pathlib import Path
 
@@ -17,14 +16,6 @@ RAW_DIR = ROOT / "data" / "raw_pdfs"
 METADATA_DIR = ROOT / "data" / "metadata"
 TEXT_DIR = ROOT / "data" / "extracted_text"
 EVALUATION_DIR = ROOT / "data" / "evaluation"
-
-
-def copy_if_changed(source: Path, destination: Path) -> None:
-    """Copy source to destination only when their bytes differ."""
-    if not source.is_file():
-        raise FileNotFoundError(f"Required supplied file is missing: {source}")
-    if not destination.exists() or source.read_bytes() != destination.read_bytes():
-        shutil.copy2(source, destination)
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
@@ -104,8 +95,6 @@ def main() -> int:
 
     metadata_path = METADATA_DIR / "metadata.csv"
     queries_path = EVALUATION_DIR / "legal_search_queries.csv"
-    copy_if_changed(ROOT / "metadata.csv", metadata_path)
-    copy_if_changed(ROOT / "legal_search_queries.csv", queries_path)
 
     metadata = read_csv(metadata_path)
     queries = read_csv(queries_path)
