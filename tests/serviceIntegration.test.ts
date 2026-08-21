@@ -89,6 +89,13 @@ describe.sequential("service integration", () => {
     expect(body.messages[1].content).toContain("Injected Case");
   });
 
+  it("rejects a malformed search body as a client error", async () => {
+    const response = await search(new Request("http://localhost/api/search", { method: "POST", body: "{not-json" }));
+    // A body the client can never fix by retrying must not be reported as a server failure.
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "Invalid search request." });
+  });
+
   it("keeps mock retrieval deterministic and bounded", () => {
     const first = mockSearch("internal investigation", "FULL_TEXT", 3);
     const second = mockSearch("internal investigation", "FULL_TEXT", 3);

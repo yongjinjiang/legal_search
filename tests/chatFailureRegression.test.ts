@@ -18,15 +18,16 @@ afterEach(() => {
 });
 
 describe("chat API failure regression", () => {
-  it("does not expose malformed JSON parser details", async () => {
+  it("rejects a malformed JSON body as a client error without parser details", async () => {
     const response = await POST(new Request("http://localhost/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: "{not-json",
     }));
 
-    expect(response.status).toBe(503);
-    await expect(response.json()).resolves.toEqual({ error: "The technical guide is temporarily unavailable." });
+    // A body the client can never fix by retrying must not be reported as a retryable outage.
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "Invalid chat request." });
   });
 
   it("does not expose document read errors or server paths", async () => {
