@@ -112,7 +112,7 @@ No deployment is performed by this repository, and secrets must never be placed 
 
 ## Security and limitations
 
-Credentials and context assembly stay on the server. APIs cap query length, message length/count, result count, and request duration. Public errors omit credentials and stack traces; prompts and chat history are not persisted; the guide has no tools or arbitrary execution. A production system still needs OAuth/service-principal authentication, rate limiting, auditability, monitoring, and retention policy.
+Credentials and context assembly stay on the server. APIs cap query length, question length, result count, and request duration. The guide endpoint accepts a single question rather than a caller-supplied transcript, so assistant turns cannot be forged, and retrieval state reaches the model as schema-validated, delimited untrusted data rather than as instructions. Public errors omit credentials and stack traces, malformed request bodies are rejected as client errors, prompts and chat history are not persisted, and the guide has no tools or arbitrary execution. A production system still needs OAuth/service-principal authentication, rate limiting, auditability, monitoring, and retention policy.
 
 The corpus is intentionally tiny, relevance judgments are author-created, the benchmark has 18 queries, and no general legal accuracy is established. Databricks reranking could not be tested because it was not enabled in the workspace; no reranker results are claimed. See [`docs/`](docs/) for the technical deep dive, evaluation details, and future work.
 
