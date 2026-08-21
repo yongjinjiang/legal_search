@@ -155,6 +155,11 @@ def chunk_units(units: list[Unit], encoding: tiktoken.Encoding) -> list[tuple[st
     return chunks
 
 
+def require_chunks(case_id: str, chunks: list[tuple[str, int, int, int]]) -> None:
+    if not chunks:
+        raise ValueError(f"{case_id}: no chunks produced; inspect the extracted text for empty or unreadable pages")
+
+
 def write_outputs(rows: list[dict[str, object]]) -> None:
     CHUNK_DIR.mkdir(parents=True, exist_ok=True)
     with CSV_PATH.open("w", encoding="utf-8", newline="") as handle:
@@ -215,6 +220,8 @@ def main() -> int:
     encoding = tiktoken.get_encoding(ENCODING_NAME)
     with METADATA_PATH.open(encoding="utf-8-sig", newline="") as handle:
         metadata = list(csv.DictReader(handle))
+    if not metadata:
+        raise ValueError("Corpus metadata contains no cases")
     rows: list[dict[str, object]] = []
     warnings: list[str] = []
     token_counts: list[int] = []
@@ -224,6 +231,7 @@ def main() -> int:
         pages = parse_pages(text)
         units = make_units(pages, encoding)
         case_chunks = chunk_units(units, encoding)
+        require_chunks(case["case_id"], case_chunks)
         for sequence, (chunk_text, page_start, page_end, count) in enumerate(case_chunks, start=1):
             rows.append({
                 "chunk_id": f"{case['case_id']}__{sequence:04d}", "case_id": case["case_id"],
