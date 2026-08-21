@@ -74,6 +74,17 @@ npm run build
 make validate
 ```
 
+### Rebuild the public corpus from a fresh clone
+
+The PDFs, extracted text, and generated chunk files are intentionally not stored in Git. Their public source URLs and expected SHA-256 hashes are tracked. To create the Python environment, download and verify the eight opinions, extract them, generate chunks, and run both validators:
+
+```bash
+make bootstrap
+make test-python
+```
+
+Individual stages are available as `make setup`, `make fetch`, `make prepare`, `make chunks`, and `make validate`. `make fetch` performs network downloads from the public URLs in `data/metadata/metadata.csv`; review those URLs before running it. A changed upstream PDF fails hash verification instead of silently changing the benchmark.
+
 ## Databricks configuration
 
 All variables are server-only:
