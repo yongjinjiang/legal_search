@@ -1,6 +1,6 @@
 import type { ContextMode } from "@/lib/chat/contextLoader";
 import { loadProjectContext } from "@/lib/chat/contextLoader";
-import type { SearchState } from "@/lib/search/types";
+import type { SearchContext } from "@/lib/chat/validation";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -10,7 +10,7 @@ export class ChatServiceError extends Error {
   }
 }
 
-export async function answerProjectQuestion(messages: Message[], mode: ContextMode, search?: SearchState): Promise<string> {
+export async function answerProjectQuestion(messages: Message[], mode: ContextMode, search?: SearchContext): Promise<string> {
   const host = process.env.DATABRICKS_HOST?.replace(/\/$/, ""); const token = process.env.DATABRICKS_TOKEN; const model = process.env.DATABRICKS_CHAT_MODEL;
   if (!host || !token || !model) throw new ChatServiceError(503, "The technical guide is not configured yet. Search remains available.");
   const context = await loadProjectContext(mode, search);
