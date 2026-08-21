@@ -14,7 +14,7 @@ describe("chat API errors", () => {
     delete process.env.DATABRICKS_CHAT_MODEL;
     const response = await POST(new Request("http://localhost/api/chat", {
       method: "POST",
-      body: JSON.stringify({ messages: [{ role: "user", content: "How does search work?" }] }),
+      body: JSON.stringify({ question: "How does search work?" }),
     }));
     expect(response.status).toBe(503);
     await expect(response.json()).resolves.toEqual({ error: "The technical guide is not configured yet. Search remains available." });
@@ -26,7 +26,7 @@ describe("chat API errors", () => {
     process.env.DATABRICKS_CHAT_MODEL = "model";
     const response = await POST(new Request("http://localhost/api/chat", {
       method: "POST",
-      body: JSON.stringify({ messages: [{ role: "user", content: "Explain this." }], search: {} }),
+      body: JSON.stringify({ question: "Explain this.", search: {} }),
     }));
     expect(response.status).toBe(400);
     const payload = await response.json() as { error: string };

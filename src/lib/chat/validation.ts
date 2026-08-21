@@ -1,11 +1,6 @@
 import { z } from "zod";
 import { QUERY_TYPES } from "@/lib/search/types";
 
-const chatMessageSchema = z.object({
-  role: z.enum(["user", "assistant"]),
-  content: z.string().trim().min(1).max(3000),
-});
-
 const contextResultSchema = z.object({
   rank: z.number().int().min(1).max(50),
   caseName: z.string().trim().min(1).max(300),
@@ -20,7 +15,7 @@ export const searchContextSchema = z.object({
 });
 
 export const chatRequestSchema = z.object({
-  messages: z.array(chatMessageSchema).min(1).max(10),
+  question: z.string().trim().min(1).max(3000),
   mode: z.enum(["standard", "detailed"]).default("standard"),
   search: searchContextSchema.optional(),
 });
