@@ -12,6 +12,8 @@ The benchmark contains 18 queries: eight semantic fact-pattern prompts, eight ke
 
 Hybrid retrieved 18/18 primary benchmark cases within the top three. It did not materially beat ANN on MRR; its measured benefit was top-three robustness. These results do not establish general legal-search accuracy.
 
+These are historical measurements whose raw per-query rankings were not preserved. Future benchmark claims must be produced with `scripts/evaluate_retrieval.py` and accompanied by its JSON result file. The evaluator saves case-level rankings and can recompute the table offline with `--score`.
+
 ## Failure analysis
 
 Q17 tested an implicit relationship: one person complained and someone close to them suffered an adverse action. ANN placed *Thompson* first; FULL_TEXT placed it seventh. Q18 deliberately withheld statute, protected activity, and adverse-action type, so several precedents were legitimate matches. For ANN, the primary *Burlington* case was fifth; relevant-case coverage was 3/7 at top 3, 4/7 at top 4, and 5/7 at top 5.

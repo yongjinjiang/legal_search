@@ -42,6 +42,15 @@ The reproducible Python pipeline prepares 8 public opinions: 350 pages, approxim
 
 These figures apply only to this prototype benchmark. Hybrid did not dramatically improve average rank over ANN; it eliminated the top-three miss, retrieving 18/18 primary cases within the top three. Q17 showed semantic strength on an unnamed third-party-retaliation relationship (ANN rank 1, FULL_TEXT rank 7). Q18 showed that an underspecified prompt can legitimately map to several precedents.
 
+The table above records the original workspace run; its raw rankings were not preserved. For new auditable runs, configure the three Databricks search variables and run:
+
+```bash
+.venv/bin/python scripts/evaluate_retrieval.py --output data/evaluation/retrieval_results.json
+.venv/bin/python scripts/evaluate_retrieval.py --score data/evaluation/retrieval_results.json
+```
+
+The result file records every query's case ranking, index name, run time, and retrieval depth so the displayed metrics can be recomputed rather than transcribed manually. Commit a result file when publishing new benchmark claims; it contains queries and case IDs but no credential.
+
 ## Technical stack
 
 Next.js App Router, React, TypeScript, server route handlers, Databricks AI Search REST API, Databricks Model Serving, Delta Lake/Unity Catalog, Python, PyMuPDF, PyArrow, and Vitest. The live index is a client dependency; this repository does not recreate or modify it.
