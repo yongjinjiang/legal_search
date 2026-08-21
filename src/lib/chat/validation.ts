@@ -11,7 +11,9 @@ const contextResultSchema = z.object({
 export const searchContextSchema = z.object({
   query: z.string().trim().min(3).max(2000),
   method: z.enum(QUERY_TYPES),
-  results: z.array(contextResultSchema).max(5),
+  // Bounded by the search route's own numResults cap, not by the prompt budget:
+  // formatSearchContext trims to the top 5 cases, so a wider result set is truncated rather than rejected.
+  results: z.array(contextResultSchema).max(50),
 });
 
 export const chatRequestSchema = z.object({
