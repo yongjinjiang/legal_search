@@ -12,6 +12,27 @@ const EXAMPLES = [
 ] as const;
 const GUIDE_QUESTIONS = ["How does this system work end-to-end?", "Why use hybrid search instead of embeddings alone?", "Why evaluate at the case level?", "Why did ANN beat keyword search on Q17?", "What happened on the broad Q18 query?", "Where would reranking fit?"];
 type ChatMessage = { role: "user" | "assistant"; content: string };
+// Figures are the measured per-method values in docs/EVALUATION_RESULTS.md; the metric is Recall@3 over the 18 queries.
+const EVALUATION_NOTES: Record<QueryType, { heading: string; metric: string; caption: string; body: string }> = {
+  HYBRID: {
+    heading: "Robustness, not a victory lap.",
+    metric: "18/18",
+    caption: "primary benchmark cases retrieved within the top 3 by hybrid search",
+    body: "Hybrid removed the single top-three miss seen with semantic search without dramatically improving average rank—MRR 0.9259 against ANN's 0.9278. The useful result is complementary retrieval behavior, not a claim of general legal-search accuracy.",
+  },
+  ANN: {
+    heading: "Strong ranks, one gap.",
+    metric: "17/18",
+    caption: "primary benchmark cases retrieved within the top 3 by semantic search",
+    body: "Semantic search led on rank quality—MRR 0.9278, the highest measured—and was strongest on paraphrased fact patterns: Q17's unnamed third-party relationship ranked first here and seventh under full text. It left one primary case outside the top three, which hybrid recovered.",
+  },
+  FULL_TEXT: {
+    heading: "Exact terms, weaker paraphrase.",
+    metric: "17/18",
+    caption: "primary benchmark cases retrieved within the top 3 by full-text search",
+    body: "Full text matched semantic search at top three but trailed on precision at rank one—Recall@1 0.7778 against 0.8889—and on MRR, 0.8598 against 0.9278. It rewards exact doctrinal vocabulary and degrades on paraphrase: Q17 fell to seventh.",
+  },
+};
 
 export function Explorer() {
   const [query, setQuery] = useState(""); const [method, setMethod] = useState<QueryType>("HYBRID"); const [completedSearch, setCompletedSearch] = useState<(SearchState & { mock: boolean }) | undefined>(); const [loading, setLoading] = useState(false); const [error, setError] = useState("");
@@ -19,6 +40,8 @@ export function Explorer() {
   // The log scrolls within a bounded panel, so new replies would otherwise land below the fold.
   useEffect(() => { const log = chatLogRef.current; if (log) log.scrollTop = log.scrollHeight; }, [messages, chatLoading]);
   const searchState: SearchState | undefined = completedSearch;
+  // Follows the selected method rather than the completed search, so the benchmark figures track the toggle.
+  const note = EVALUATION_NOTES[method];
   const results = completedSearch?.results ?? [];
   async function runSearch() { const requestId = ++searchRequestRef.current; const requestedQuery = query.trim(); const requestedMethod = method; setLoading(true); setError(""); try { const response = await fetch("/api/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: requestedQuery, queryType: requestedMethod, numResults: 20 }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error); if (requestId === searchRequestRef.current) setCompletedSearch({ query: requestedQuery, method: requestedMethod, results: data.results, mock: data.mock }); } catch (e) { if (requestId === searchRequestRef.current) { setError(e instanceof Error ? e.message : "Search failed."); setCompletedSearch(undefined); } } finally { if (requestId === searchRequestRef.current) setLoading(false); } }
   async function sendChat(seed?: string) { const content = (seed ?? chatInput).trim(); if (!content || chatLoading) return; const next = [...messages, { role: "user" as const, content }]; setMessages(next); setChatInput(""); setChatLoading(true); try { const response = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: content, mode, search: searchState }) }); const data = await response.json(); setMessages([...next, { role: "assistant", content: response.ok ? data.answer : data.error }]); } catch { setMessages([...next, { role: "assistant", content: "The technical guide is temporarily unavailable." }]); } finally { setChatLoading(false); } }
@@ -45,7 +68,7 @@ export function Explorer() {
         </section>
         <aside id="guide" className="guide"><div className="guide-inner"><div className="section-label light"><span>02</span> Technical guide</div><h2>Ask about the system</h2><p className="guide-intro">Explore the architecture, retrieval choices, benchmark, or the results beside you. Grounded in the project documentation.</p><div className="mode-toggle" role="group" aria-label="Guide detail level"><button className={mode === "standard" ? "active" : ""} aria-pressed={mode === "standard"} onClick={() => setMode("standard")}>Standard</button><button className={mode === "detailed" ? "active" : ""} aria-pressed={mode === "detailed"} onClick={() => setMode("detailed")}>Detailed technical</button></div><div className="chat-log" ref={chatLogRef} aria-live="polite">{messages.length === 0 ? <div className="prompts">{GUIDE_QUESTIONS.map((q) => <button key={q} onClick={() => sendChat(q)}>{q}<span>↗</span></button>)}</div> : messages.map((m, i) => <div key={i} className={`message ${m.role}`}><span>{m.role === "user" ? "You" : "Guide"}</span><p>{m.content}</p></div>)}{chatLoading && <div className="thinking">Consulting project documentation…</div>}</div><div className="chat-compose"><textarea ref={chatRef} value={chatInput} maxLength={3000} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); } }} placeholder="Ask about this project…"/><button onClick={() => sendChat()} disabled={!chatInput.trim() || chatLoading} aria-label="Send question">↑</button></div><p className="context-note">{searchState ? `The completed ${searchState.method.toLowerCase()} search is included as context.` : "Run a search to let the guide explain its results."}</p></div></aside>
       </div>
-      <section id="evaluation" className="evaluation"><div><div className="section-label"><span>03</span> Evaluation note</div><h2>Robustness, not a victory lap.</h2></div><div className="metric"><strong>18/18</strong><span>primary benchmark cases retrieved within the top 3 by hybrid search</span></div><p>On this 18-query prototype benchmark, hybrid search removed the single top-three miss seen with ANN. It did not dramatically improve average rank. The useful result is complementary retrieval behavior—not a claim of general legal-search accuracy.</p></section>
+      <section id="evaluation" className="evaluation"><div><div className="section-label"><span>03</span> Evaluation note</div><h2>{note.heading}</h2></div><div className="metric"><strong>{note.metric}</strong><span>{note.caption}</span></div><p>{note.body}<small className="eval-scope">Measured on the fixed 18-query benchmark, not on your query.</small></p></section>
     </main><footer><span>Legal retrieval research prototype.</span> Public U.S. Supreme Court opinions only. Not legal advice.</footer>
   </>;
 }
