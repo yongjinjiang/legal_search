@@ -1,8 +1,11 @@
 import { collapseToCases } from "@/lib/search/caseRanking";
 import type { CaseResult, QueryType, SearchChunk } from "@/lib/search/types";
+import { databricksConnection, fetchWithTimeout } from "@/lib/databricks/client";
 
 const COLUMNS = ["chunk_id", "case_id", "case_name", "citation", "page_start", "page_end", "chunk_text"];
 const MAX_LOG_VALUE_LENGTH = 500;
+// Search should fail quickly enough that a user can retry or change strategies.
+const SEARCH_TIMEOUT_MS = 12_000;
 
 type DatabricksErrorDetails = {
   status: number;
@@ -73,11 +76,10 @@ export function parseDatabricksResults(payload: unknown): SearchChunk[] {
 }
 
 async function liveSearch(query: string, queryType: QueryType, numResults: number): Promise<SearchChunk[]> {
-  const host = process.env.DATABRICKS_HOST?.replace(/\/$/, ""); const token = process.env.DATABRICKS_TOKEN; const index = process.env.DATABRICKS_INDEX_NAME;
+  const { host, token } = databricksConnection(); const index = process.env.DATABRICKS_INDEX_NAME;
   if (!host || !token || !index) throw new SearchServiceError(503, "Live search is not configured. Enable mock mode or add Databricks server credentials.");
-  const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 12000);
   try {
-    const response = await fetch(`${host}/api/2.0/vector-search/indexes/${encodeURIComponent(index)}/query`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ query_text: query, query_type: queryType, columns: COLUMNS, num_results: numResults }), signal: controller.signal, cache: "no-store" });
+    const response = await fetchWithTimeout(`${host}/api/2.0/vector-search/indexes/${encodeURIComponent(index)}/query`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ query_text: query, query_type: queryType, columns: COLUMNS, num_results: numResults }), cache: "no-store" }, SEARCH_TIMEOUT_MS);
     if (!response.ok) {
       const details = await extractDatabricksError(response);
       logDatabricksError(details, queryType);
@@ -93,7 +95,7 @@ async function liveSearch(query: string, queryType: QueryType, numResults: numbe
       throw new SearchServiceError(response.status, message);
     }
     return parseDatabricksResults(await response.json());
-  } catch (error) { if (error instanceof SearchServiceError) throw error; if ((error as Error).name === "AbortError") throw new SearchServiceError(504, "Search timed out. Please try again."); throw new SearchServiceError(502, "Unable to reach the search service."); } finally { clearTimeout(timeout); }
+  } catch (error) { if (error instanceof SearchServiceError) throw error; if ((error as Error).name === "AbortError") throw new SearchServiceError(504, "Search timed out. Please try again."); throw new SearchServiceError(502, "Unable to reach the search service."); }
 }
 
 export async function searchCases(query: string, queryType: QueryType, numResults = 20): Promise<{ results: CaseResult[]; mock: boolean }> {
