@@ -64,6 +64,8 @@ cp .env.example .env.local
 npm run dev
 ```
 
+The `dev` and `build` scripts deliberately use Next's WASM SWC package. On this Dropbox-hosted macOS workspace the native SWC binary fails code-signature validation; removing the fallback makes `next build` fail. Re-test the native compiler before removing these environment flags on a different filesystem or build host.
+
 Validation commands:
 
 ```bash
