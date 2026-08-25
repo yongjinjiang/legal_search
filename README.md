@@ -105,10 +105,23 @@ The search adapter calls the existing index with `ANN`, `FULL_TEXT`, or `HYBRID`
 
 1. Push this repository to GitHub and import it in Vercel from the repository root.
 2. Use the detected Next.js framework settings and standard `npm run build` command.
-3. Add the five variables above in Vercel Project Settings → Environment Variables. Use a short-lived production credential and set `MOCK_DATABRICKS=false`.
+3. Add the variables above in Vercel Project Settings → Environment Variables, including `CRON_SECRET`. Use a short-lived production credential and set `MOCK_DATABRICKS=false`.
 4. Deploy, verify `/api/health`, run all three retrieval modes, and test the guide. Visitors need no Databricks account.
 
 No deployment is performed by this repository, and secrets must never be placed in source control.
+
+### Daily search monitor
+
+`vercel.json` schedules `/api/cron/search-check` once a day. The route runs one probe per retrieval method in parallel, treats an empty result set as a fault, and logs a line per method:
+
+```text
+[search-monitor] ok      { method: 'ANN', cases: 3, ms: 412, mode: 'live' }
+[search-monitor] FAILED  { method: 'FULL_TEXT', status: 400, error: '…', mode: 'live' }
+```
+
+A failed probe returns 503 so the run is marked failed in Vercel's cron history, which surfaces an outage without reading logs. This exists because a single method can break while the others keep working — full-text search is gated behind a workspace preview flag, and when that flag is off Databricks rejects only `FULL_TEXT`.
+
+The route requires `CRON_SECRET` and fails closed without it: it compares `Authorization: Bearer $CRON_SECRET`, so an unauthenticated caller cannot trigger live Databricks queries. Generate one with `openssl rand -base64 32`. Hobby projects are limited to daily schedules.
 
 ## Security and limitations
 
