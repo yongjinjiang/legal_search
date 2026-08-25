@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import os
+import subprocess
 import sys
 import urllib.error
 import urllib.parse
@@ -50,6 +52,47 @@ def collapse_case_ids(payload: dict[str, Any], limit: int | None = None) -> list
 def chunk_row_count(payload: dict[str, Any]) -> int:
     rows = payload.get("result", {}).get("data_array")
     return len(rows) if isinstance(rows, list) else 0
+
+
+def validate_runs(runs: list[dict[str, Any]], queries: list[dict[str, str]]) -> list[dict[str, Any]]:
+    """Require exactly one run per query/method pair, with gold labels from the query file.
+
+    Metrics are averaged over whatever records exist, so a result file containing only the
+    queries that happened to succeed would report inflated scores. Gold labels are taken
+    from the canonical CSV rather than trusted from the result file.
+    """
+    gold = {row["query_id"]: row["primary_gold_case"] for row in queries}
+    expected = {(query_id, method) for query_id in gold for method in METHODS}
+    seen: set[tuple[str, str]] = set()
+    validated: list[dict[str, Any]] = []
+    for run in runs:
+        key = (run.get("query_id"), run.get("method"))
+        if key[1] not in METHODS:
+            raise ValueError(f"Result file contains an unknown method: {key[1]!r}")
+        if key[0] not in gold:
+            raise ValueError(f"Result file contains a query absent from {QUERIES_PATH.name}: {key[0]!r}")
+        if key in seen:
+            raise ValueError(f"Result file contains duplicate runs for {key[0]} {key[1]}")
+        if run.get("primary_gold_case") != gold[key[0]]:
+            raise ValueError(f"Result file gold case for {key[0]} does not match {QUERIES_PATH.name}")
+        seen.add(key)
+        validated.append(run)
+    missing = sorted(expected - seen)
+    if missing:
+        summary = ", ".join(f"{query_id}/{method}" for query_id, method in missing[:5])
+        raise ValueError(f"Result file is missing {len(missing)} of {len(expected)} runs: {summary}{'…' if len(missing) > 5 else ''}")
+    return validated
+
+
+def query_file_digest() -> str:
+    return hashlib.sha256(QUERIES_PATH.read_bytes()).hexdigest()
+
+
+def git_commit() -> str:
+    try:
+        return subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
+    except (subprocess.CalledProcessError, OSError):
+        return "unknown"
 
 
 def score_runs(runs: list[dict[str, Any]]) -> dict[str, dict[str, float]]:
@@ -132,7 +175,15 @@ def main() -> int:
 
     if args.score:
         payload = json.loads(args.score.read_text(encoding="utf-8"))
-        print_scores(score_runs(payload["runs"]))
+        try:
+            runs = validate_runs(payload["runs"], load_queries())
+        except ValueError as error:
+            print(f"error: {error}", file=sys.stderr)
+            return 2
+        if payload.get("query_file_sha256") not in (None, query_file_digest()):
+            print("error: result file was produced against a different query set", file=sys.stderr)
+            return 2
+        print_scores(score_runs(runs))
         return 0
 
     host = os.environ.get("DATABRICKS_HOST")
@@ -169,11 +220,13 @@ def main() -> int:
         "index_name": index_name,
         "num_chunk_results": args.num_results,
         "query_file": str(QUERIES_PATH.relative_to(ROOT)),
+        "query_file_sha256": query_file_digest(),
+        "git_commit": git_commit(),
         "runs": runs,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
-    print_scores(score_runs(runs))
+    print_scores(score_runs(validate_runs(runs, queries)))
     print(f"Saved auditable rankings to {args.output}")
     return 0
 

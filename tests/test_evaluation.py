@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.evaluate_retrieval import collapse_case_ids, score_runs
+from scripts.evaluate_retrieval import METHODS, collapse_case_ids, load_queries, score_runs, validate_runs
 
 
 class EvaluationTests(unittest.TestCase):
@@ -55,6 +55,38 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(scores["ANN"]["recall_at_1"], 0.5)
         self.assertEqual(scores["ANN"]["recall_at_3"], 1.0)
         self.assertEqual(scores["ANN"]["mrr"], 0.75)
+
+
+class RunValidationTests(unittest.TestCase):
+    def setUp(self):
+        self.queries = load_queries()
+        self.runs = [
+            {"query_id": row["query_id"], "method": method, "primary_gold_case": row["primary_gold_case"], "ranked_case_ids": [row["primary_gold_case"]]}
+            for row in self.queries
+            for method in METHODS
+        ]
+
+    def test_accepts_a_complete_result_file(self):
+        self.assertEqual(len(validate_runs(self.runs, self.queries)), len(self.queries) * len(METHODS))
+
+    def test_rejects_a_partial_result_file(self):
+        with self.assertRaises(ValueError):
+            validate_runs(self.runs[:-1], self.queries)
+
+    def test_rejects_duplicate_runs(self):
+        with self.assertRaises(ValueError):
+            validate_runs(self.runs + [self.runs[0]], self.queries)
+
+    def test_rejects_an_unknown_query(self):
+        stray = dict(self.runs[0], query_id="Q999")
+        with self.assertRaises(ValueError):
+            validate_runs(self.runs + [stray], self.queries)
+
+    def test_rejects_an_altered_gold_label(self):
+        tampered = list(self.runs)
+        tampered[0] = dict(tampered[0], primary_gold_case="not-the-gold-case")
+        with self.assertRaises(ValueError):
+            validate_runs(tampered, self.queries)
 
 
 if __name__ == "__main__":
