@@ -14,6 +14,10 @@ from pathlib import Path
 import pyarrow as pa
 import pyarrow.parquet as pq
 import tiktoken
+try:  # imported as scripts.<module> by the test suite, run directly by the Makefile
+    from scripts.tokenizer import load_encoding
+except ImportError:
+    from tokenizer import load_encoding
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -217,7 +221,7 @@ def report(rows: list[dict[str, object]], token_counts: list[int], warnings: lis
 
 
 def main() -> int:
-    encoding = tiktoken.get_encoding(ENCODING_NAME)
+    encoding = load_encoding(ENCODING_NAME)
     with METADATA_PATH.open(encoding="utf-8-sig", newline="") as handle:
         metadata = list(csv.DictReader(handle))
     if not metadata:

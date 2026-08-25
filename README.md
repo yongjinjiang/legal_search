@@ -85,7 +85,7 @@ make bootstrap
 make test-python
 ```
 
-Individual stages are available as `make setup`, `make fetch`, `make prepare`, `make chunks`, and `make validate`. `make fetch` performs network downloads from the public URLs in `data/metadata/metadata.csv`; review those URLs before running it. A changed upstream PDF fails hash verification instead of silently changing the benchmark.
+Individual stages are available as `make setup`, `make tokenizer`, `make fetch`, `make prepare`, `make chunks`, and `make validate`. `make tokenizer` is a one-time preflight: tiktoken ships no encoding data and downloads its `cl100k_base` BPE asset from `openaipublic.blob.core.windows.net` on first use, so chunking and chunk validation are not offline operations on a cold cache. `make bootstrap` runs it for you, and a failed download now reports what is missing instead of a urllib stack trace. Set `TIKTOKEN_CACHE_DIR` to reuse an existing cache. `make fetch` performs network downloads from the public URLs in `data/metadata/metadata.csv`; review those URLs before running it. A changed upstream PDF fails hash verification instead of silently changing the benchmark.
 
 ## Databricks configuration
 

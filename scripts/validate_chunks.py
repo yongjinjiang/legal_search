@@ -12,7 +12,10 @@ from collections import Counter
 from pathlib import Path
 
 import pyarrow.parquet as pq
-import tiktoken
+try:  # imported as scripts.<module> by the test suite, run directly by the Makefile
+    from scripts.tokenizer import load_encoding
+except ImportError:
+    from tokenizer import load_encoding
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,7 +41,7 @@ def normalize_page(text: str) -> str:
 def main() -> int:
     errors: list[str] = []
     warnings: list[str] = []
-    encoding = tiktoken.get_encoding("cl100k_base")
+    encoding = load_encoding()
     with METADATA_PATH.open(encoding="utf-8-sig", newline="") as handle:
         metadata = {row["case_id"]: row for row in csv.DictReader(handle)}
     with CSV_PATH.open(encoding="utf-8", newline="") as handle:
