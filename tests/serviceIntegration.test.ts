@@ -16,7 +16,8 @@ describe.sequential("service integration", () => {
   it("reports mock health and serves grouped mock search results", async () => {
     process.env.MOCK_DATABRICKS = "true";
     const healthResponse = health();
-    await expect(healthResponse.json()).resolves.toMatchObject({ status: "ok", searchMode: "mock" });
+    expect(healthResponse.status).toBe(200);
+    await expect(healthResponse.json()).resolves.toMatchObject({ status: "degraded", searchMode: "mock", searchConfigured: true, chatConfigured: false });
 
     const response = await search(new Request("http://localhost/api/search", {
       method: "POST",
