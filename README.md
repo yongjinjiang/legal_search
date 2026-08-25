@@ -101,6 +101,8 @@ MOCK_DATABRICKS=false
 
 The search adapter calls the existing index with `ANN`, `FULL_TEXT`, or `HYBRID`. The chat model is deliberately configurable because serving-endpoint availability differs by workspace. If chat is not configured, search continues to work and the guide shows a configuration message.
 
+`FULL_TEXT` additionally requires the **AI Search: Full-Text Search** preview to be enabled in the Databricks workspace (Settings → Previews). It is a beta feature and off by default. While it is off, Databricks rejects only full-text queries with HTTP 400 while `ANN` and `HYBRID` keep serving normally from the same endpoint, so the failure looks like an application bug rather than a missing entitlement. The public error message deliberately withholds the Databricks diagnostic; the `error_code` is in the server log line `[databricks-search] request failed`. Reranking is gated the same way and was unavailable in the original workspace, which is why no reranker results are claimed.
+
 ## Vercel deployment
 
 1. Push this repository to GitHub and import it in Vercel from the repository root.
@@ -131,4 +133,4 @@ The corpus is intentionally tiny, relevance judgments are author-created, the be
 
 ## Repository structure
 
-`src/app` contains the UI and server endpoints; `src/lib` contains Databricks, ranking, and context abstractions; `tests` covers parsing, collapse, ordering, context modes, and validation; `scripts` and `data` preserve the corpus/evaluation pipeline; `docs` supplies human and chatbot technical context.
+`src/app` contains the UI, server endpoints, and the daily retrieval monitor under `api/cron`; `src/lib` contains Databricks, ranking, and context abstractions; `tests` covers parsing, collapse, ordering, context modes, validation, and monitor probes; `scripts` and `data` preserve the corpus/evaluation pipeline; `docs` supplies human and chatbot technical context.
