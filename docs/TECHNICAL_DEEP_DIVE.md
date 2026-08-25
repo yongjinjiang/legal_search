@@ -16,7 +16,7 @@ The Next.js server sends `query_text`, `query_type`, requested columns, and 20 c
 
 ## Benchmark and failure analysis
 
-The 18-query benchmark pairs natural-language fact patterns with exact-term queries across the eight cases. Recall@k and reciprocal rank are computed after case collapse, preventing long opinions such as *Bostock* (101 chunks) from occupying many user-facing ranks. See `EVALUATION_RESULTS.md` for all measured values. Q17 demonstrates semantic relationship matching; Q18 demonstrates that broad prompts can have multiple valid precedents rather than one uniquely correct answer.
+The 18-query benchmark pairs natural-language fact patterns with exact-term queries across the eight cases. Recall@k and reciprocal rank are computed after case collapse, which stops long opinions such as *Bostock* (101 chunks) from occupying many user-facing ranks. Collapse is a display-level deduplication applied after retrieval, so it cannot recover a case that never entered the candidate chunk set. See `EVALUATION_RESULTS.md` for all measured values. Q17 demonstrates semantic relationship matching; Q18 demonstrates that broad prompts can have multiple valid precedents rather than one uniquely correct answer.
 
 Reranking was attempted but the workspace reported that it was not enabled. It belongs after candidate retrieval and before case collapse, but no results should be inferred.
 

@@ -28,7 +28,7 @@ flowchart LR
 - **Full text:** exact phrases, statutory terms, and doctrinal vocabulary.
 - **Hybrid:** Databricks combines semantic and lexical ranked lists with Reciprocal Rank Fusion. Ranks—not raw cross-method scores—are compared.
 
-The server requests 20 chunks and collapses them by `case_id`. Each case receives one rank based on its best passage; other matching passages remain inspectable. This prevents a 101-chunk opinion from crowding out shorter cases.
+The server requests 20 chunks and collapses them by `case_id`. Each case receives one rank based on its best passage; other matching passages remain inspectable. This deduplicates the display so a 101-chunk opinion such as *Bostock* cannot occupy several visible ranks at once. It does not diversify the candidate set: collapse runs after retrieval, so a long opinion can still consume most of the 20 chunks and push a shorter case out of the candidates entirely, where no post-processing can recover it. Candidate-level diversification would need deeper retrieval, case-aware selection, two-stage retrieval, or reranking before collapse.
 
 ## Corpus and evaluation
 
