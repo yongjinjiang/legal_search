@@ -13,3 +13,5 @@ data/raw_pdfs/
 data/extracted_text/
 data/chunks/*.parquet
 data/chunks/*.csv
+.vercel
+.env*
