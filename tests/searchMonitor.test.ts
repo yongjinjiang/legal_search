@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { GET as monitor } from "../src/app/api/cron/search-check/route";
+import { GET as monitor, probe } from "../src/app/api/cron/search-check/route";
 
 const originalEnv = { ...process.env };
 const request = (headers?: Record<string, string>) => new Request("http://localhost/api/cron/search-check", { headers });
@@ -28,15 +28,38 @@ describe.sequential("search monitor cron", () => {
     expect((await monitor(request({ authorization: "Bearer wrong" }))).status).toBe(401);
   });
 
-  it("reports every method healthy and records the mode", async () => {
+  // A mock run exercises a local fixture, so reporting it healthy would assert nothing
+  // about Databricks. The probe helper is still tested directly against mock data below.
+  it("refuses to report health while running in mock mode", async () => {
     process.env.CRON_SECRET = "expected";
     process.env.MOCK_DATABRICKS = "true";
     const response = await monitor(request({ authorization: "Bearer expected" }));
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({ mode: "mock", healthy: false, probes: [] });
+  });
+
+  it("probes each method and counts the cases returned", async () => {
+    process.env.MOCK_DATABRICKS = "true";
+    const results = await Promise.all(["HYBRID", "ANN", "FULL_TEXT"].map((method) => probe(method as "HYBRID")));
+    expect(results.every((result) => result.ok && result.cases > 0)).toBe(true);
+  });
+
+  it("reports every method healthy against a live index", async () => {
+    process.env.CRON_SECRET = "expected";
+    process.env.MOCK_DATABRICKS = "false";
+    process.env.DATABRICKS_HOST = "https://workspace.example";
+    process.env.DATABRICKS_TOKEN = "secret";
+    process.env.DATABRICKS_INDEX_NAME = "catalog.schema.index";
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify({
+      manifest: { columns: ["chunk_id", "case_id", "case_name", "citation", "page_start", "page_end", "chunk_text"].map((name) => ({ name })) },
+      result: { data_array: [["chunk-1", "case-1", "Case One", "1 U.S. 1", 1, 2, "Relevant passage"]] },
+    }), { status: 200 }))));
+
+    const response = await monitor(request({ authorization: "Bearer expected" }));
     expect(response.status).toBe(200);
-    const payload = await response.json() as { mode: string; healthy: boolean; probes: Array<{ method: string; ok: boolean; cases: number }> };
-    expect(payload).toMatchObject({ mode: "mock", healthy: true });
-    expect(payload.probes.map((probe) => probe.method)).toEqual(["HYBRID", "ANN", "FULL_TEXT"]);
-    expect(payload.probes.every((probe) => probe.ok && probe.cases > 0)).toBe(true);
+    const payload = await response.json() as { mode: string; healthy: boolean; probes: Array<{ method: string }> };
+    expect(payload).toMatchObject({ mode: "live", healthy: true });
+    expect(payload.probes.map((entry) => entry.method)).toEqual(["HYBRID", "ANN", "FULL_TEXT"]);
   });
 
   it("fails the run when a method is rejected by Databricks", async () => {
@@ -70,10 +93,10 @@ describe.sequential("search monitor cron", () => {
     process.env.DATABRICKS_HOST = "https://workspace.example";
     process.env.DATABRICKS_TOKEN = "secret";
     process.env.DATABRICKS_INDEX_NAME = "catalog.schema.index";
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify({
       manifest: { columns: ["chunk_id", "case_id", "case_name", "citation", "page_start", "page_end", "chunk_text"].map((name) => ({ name })) },
       result: { data_array: [] },
-    }), { status: 200 })));
+    }), { status: 200 }))));
 
     const response = await monitor(request({ authorization: "Bearer expected" }));
     expect(response.status).toBe(503);

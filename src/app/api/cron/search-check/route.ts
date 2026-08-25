@@ -14,7 +14,7 @@ const PROBE_RESULTS = 3;
 
 type ProbeResult = { method: QueryType; ok: boolean; cases: number; ms: number; status?: number; error?: string };
 
-async function probe(method: QueryType): Promise<ProbeResult> {
+export async function probe(method: QueryType): Promise<ProbeResult> {
   const started = Date.now();
   try {
     const { results } = await searchCases(PROBE_QUERY, method, PROBE_RESULTS);
@@ -33,7 +33,14 @@ export async function GET(request: Request) {
   if (!secret) return NextResponse.json({ error: "Monitor is not configured." }, { status: 503 });
   if (request.headers.get("authorization") !== `Bearer ${secret}`) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
-  const mode = process.env.MOCK_DATABRICKS === "true" ? "mock" : "live";
+  // Mock mode answers from a local fixture, so a green run would assert nothing about
+  // Databricks. Fail closed rather than report health the monitor cannot actually observe.
+  if (process.env.MOCK_DATABRICKS === "true") {
+    console.error("[search-monitor] FAILED", { error: "Monitor ran in mock mode; no Databricks call was made.", mode: "mock" });
+    return NextResponse.json({ mode: "mock", checkedAt: new Date().toISOString(), healthy: false, error: "Monitor requires live mode.", probes: [] }, { status: 503 });
+  }
+
+  const mode = "live";
   const probes = await Promise.all(QUERY_TYPES.map((method) => probe(method)));
   for (const result of probes) {
     if (result.ok) console.log("[search-monitor] ok", { method: result.method, cases: result.cases, ms: result.ms, mode });
