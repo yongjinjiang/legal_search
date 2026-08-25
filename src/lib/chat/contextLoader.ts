@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { SearchContext } from "@/lib/chat/validation";
+import { MAX_CASE_RESULTS } from "@/lib/search/types";
 
 export type ContextMode = "standard" | "detailed";
 const STANDARD = ["PROJECT_CONTEXT_SUMMARY.md"];
@@ -15,7 +16,7 @@ export function formatSearchContext(search: SearchContext): string {
   return JSON.stringify({
     query: search.query,
     method: search.method,
-    cases: search.results.slice(0, 5).map((result) => ({
+    cases: search.results.slice(0, MAX_CASE_RESULTS).map((result) => ({
       rank: result.rank,
       caseName: result.caseName,
       citation: result.citation,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { chatRequestSchema } from "../src/lib/chat/validation";
 import { formatSearchContext } from "../src/lib/chat/contextLoader";
+import { MAX_CASE_RESULTS } from "../src/lib/search/types";
 
 const result = {
   rank: 1,
@@ -30,19 +31,18 @@ describe("chat request validation", () => {
     }).success).toBe(false);
   });
 
-  it("accepts a case list wider than the prompt budget and truncates it downstream", () => {
-    // A live 8-opinion corpus collapses to more than five cases on broad queries; the prompt
-    // budget is enforced by formatSearchContext, so a wider list must not be rejected outright.
-    const results = Array.from({ length: 8 }, (_, i) => ({ ...result, rank: i + 1, caseName: `Case ${i + 1}` }));
+  it("accepts a full case list and passes every case to the prompt", () => {
+    const results = Array.from({ length: MAX_CASE_RESULTS }, (_, i) => ({ ...result, rank: i + 1, caseName: `Case ${i + 1}` }));
     const parsed = chatRequestSchema.parse({ question: "Explain.", search: { query: "broad retaliation search", method: "HYBRID", results } });
-    expect(parsed.search?.results).toHaveLength(8);
+    expect(parsed.search?.results).toHaveLength(MAX_CASE_RESULTS);
 
     const formatted = JSON.parse(formatSearchContext(parsed.search!)) as { cases: unknown[] };
-    expect(formatted.cases).toHaveLength(5);
+    expect(formatted.cases).toHaveLength(MAX_CASE_RESULTS);
   });
 
-  it("still rejects a case list beyond the search route's own result cap", () => {
-    const results = Array.from({ length: 51 }, (_, i) => ({ ...result, rank: 1, caseName: `Case ${i + 1}` }));
+  it("rejects a case list wider than any search this application performs", () => {
+    // searchCases always collapses to MAX_CASE_RESULTS, so a longer list did not come from the UI.
+    const results = Array.from({ length: MAX_CASE_RESULTS + 1 }, (_, i) => ({ ...result, rank: 1, caseName: `Case ${i + 1}` }));
     expect(chatRequestSchema.safeParse({ question: "Explain.", search: { query: "valid query", method: "HYBRID", results } }).success).toBe(false);
   });
 

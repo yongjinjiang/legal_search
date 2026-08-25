@@ -1,5 +1,5 @@
 import { collapseToCases } from "@/lib/search/caseRanking";
-import type { CaseResult, QueryType, SearchChunk } from "@/lib/search/types";
+import { MAX_CASE_RESULTS, type CaseResult, type QueryType, type SearchChunk } from "@/lib/search/types";
 import { databricksConnection, fetchWithTimeout } from "@/lib/databricks/client";
 
 const COLUMNS = ["chunk_id", "case_id", "case_name", "citation", "page_start", "page_end", "chunk_text"];
@@ -101,5 +101,5 @@ async function liveSearch(query: string, queryType: QueryType, numResults: numbe
 export async function searchCases(query: string, queryType: QueryType, numResults = 20): Promise<{ results: CaseResult[]; mock: boolean }> {
   const mock = process.env.MOCK_DATABRICKS === "true";
   const chunks = mock ? (await import("@/lib/search/mockSearch")).mockSearch(query, queryType, numResults) : await liveSearch(query, queryType, numResults);
-  return { results: collapseToCases(chunks, queryType, 5), mock };
+  return { results: collapseToCases(chunks, queryType, MAX_CASE_RESULTS), mock };
 }
