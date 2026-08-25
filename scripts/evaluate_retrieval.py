@@ -23,8 +23,13 @@ METHODS = ("ANN", "FULL_TEXT", "HYBRID")
 COLUMNS = ("chunk_id", "case_id")
 
 
-def collapse_case_ids(payload: dict[str, Any], limit: int = 5) -> list[str]:
-    """Map Databricks chunk rows to unique case IDs in retrieval order."""
+def collapse_case_ids(payload: dict[str, Any], limit: int | None = None) -> list[str]:
+    """Map Databricks chunk rows to unique case IDs in retrieval order.
+
+    The full ranking is returned by default. Saved rankings must not be truncated to the
+    UI's display depth: a gold case at rank 7 still contributes 1/7 to MRR, and truncating
+    at 5 would silently score it as absent.
+    """
     columns = [column.get("name") for column in payload.get("manifest", {}).get("columns", [])]
     rows = payload.get("result", {}).get("data_array")
     if not isinstance(rows, list) or not all(column in columns for column in COLUMNS):
@@ -37,9 +42,14 @@ def collapse_case_ids(payload: dict[str, Any], limit: int = 5) -> list[str]:
         case_id = str(row[case_index])
         if case_id not in ranked:
             ranked.append(case_id)
-        if len(ranked) == limit:
+        if limit is not None and len(ranked) == limit:
             break
     return ranked
+
+
+def chunk_row_count(payload: dict[str, Any]) -> int:
+    rows = payload.get("result", {}).get("data_array")
+    return len(rows) if isinstance(rows, list) else 0
 
 
 def score_runs(runs: list[dict[str, Any]]) -> dict[str, dict[str, float]]:
@@ -50,12 +60,18 @@ def score_runs(runs: list[dict[str, Any]]) -> dict[str, dict[str, float]]:
         if not method_runs:
             continue
         ranks: list[int | None] = []
+        censored_misses = 0
         for run in method_runs:
             ranked = run["ranked_case_ids"]
             try:
                 ranks.append(ranked.index(run["primary_gold_case"]) + 1)
             except ValueError:
                 ranks.append(None)
+                # num_results is a chunk depth, not a case depth. When the response filled
+                # that depth, an unseen case may rank below the observed window rather than
+                # be genuinely absent, so the miss is reported rather than assumed definitive.
+                if run.get("censored"):
+                    censored_misses += 1
         total = len(ranks)
         scores[method] = {
             "queries": float(total),
@@ -63,6 +79,8 @@ def score_runs(runs: list[dict[str, Any]]) -> dict[str, dict[str, float]]:
             "recall_at_3": sum(rank is not None and rank <= 3 for rank in ranks) / total,
             "recall_at_5": sum(rank is not None and rank <= 5 for rank in ranks) / total,
             "mrr": sum(1 / rank for rank in ranks if rank is not None) / total,
+            "unranked_gold": float(sum(rank is None for rank in ranks)),
+            "censored_misses": float(censored_misses),
         }
     return scores
 
@@ -99,6 +117,10 @@ def print_scores(scores: dict[str, dict[str, float]]) -> None:
             continue
         row = scores[method]
         print(f"{method:10}  {row['recall_at_1']:.4f}    {row['recall_at_3']:.4f}    {row['recall_at_5']:.4f}    {row['mrr']:.4f}")
+    for method in METHODS:
+        censored = scores.get(method, {}).get("censored_misses", 0)
+        if censored:
+            print(f"warning: {method} has {int(censored)} gold case(s) unranked within the retrieved chunk depth; metrics are a lower bound")
 
 
 def main() -> int:
@@ -128,17 +150,21 @@ def main() -> int:
         for method in METHODS:
             payload = query_index(host, token, index_name, row["query"], method, args.num_results)
             ranked_case_ids = collapse_case_ids(payload)
+            chunks_returned = chunk_row_count(payload)
             runs.append({
                 "query_id": row["query_id"],
                 "method": method,
                 "primary_gold_case": row["primary_gold_case"],
                 "other_relevant_cases": [case for case in row["other_relevant_cases"].split("|") if case],
                 "ranked_case_ids": ranked_case_ids,
+                "chunks_returned": chunks_returned,
+                # The requested chunk depth was exhausted, so cases may exist below the window.
+                "censored": chunks_returned >= args.num_results,
             })
             print(f"{row['query_id']} {method}: {', '.join(ranked_case_ids)}")
 
     result = {
-        "schema_version": 1,
+        "schema_version": 2,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "index_name": index_name,
         "num_chunk_results": args.num_results,
