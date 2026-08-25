@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { GET as monitor, probe } from "../src/app/api/cron/search-check/route";
+import { GET as monitor } from "../src/app/api/cron/search-check/route";
+import { probe } from "../src/lib/monitor/probe";
 
 const originalEnv = { ...process.env };
 const request = (headers?: Record<string, string>) => new Request("http://localhost/api/cron/search-check", { headers });
