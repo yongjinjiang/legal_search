@@ -127,9 +127,26 @@ The route requires `CRON_SECRET` and fails closed without it: it compares `Autho
 
 ## Security and limitations
 
-Credentials and context assembly stay on the server. APIs cap query length, question length, result count, and request duration. The guide endpoint accepts a single question rather than a caller-supplied transcript, so assistant turns cannot be forged, and retrieval state reaches the model as schema-validated, delimited untrusted data rather than as instructions. Public errors omit credentials and stack traces, malformed request bodies are rejected as client errors, prompts and chat history are not persisted, and the guide has no tools or arbitrary execution. A production system still needs OAuth/service-principal authentication, rate limiting, auditability, monitoring, and retention policy.
+Credentials and context assembly stay on the server. APIs cap query length, question length, result count, and request duration. The guide endpoint accepts a single question rather than a caller-supplied transcript, so assistant turns cannot be forged, and retrieval state reaches the model as schema-validated, delimited untrusted data rather than as instructions. Public errors omit credentials and stack traces, malformed request bodies are rejected as client errors, prompts and chat history are not persisted, and the guide has no tools or arbitrary execution. Request frequency is limited outside the application, at the edge (see below). A production system still needs OAuth/service-principal authentication, auditability, and retention policy.
 
 The corpus is intentionally tiny, relevance judgments are author-created, the benchmark has 18 queries, and no general legal accuracy is established. Databricks reranking could not be tested because it was not enabled in the workspace; no reranker results are claimed. See [`docs/`](docs/) for the technical deep dive, evaluation details, and future work.
+
+### Rate limiting
+
+Both API routes reach credentialed Databricks services, so an unthrottled caller is a cost and availability risk rather than only a theoretical one. Rate limiting is enforced by a Vercel WAF rule rather than in application code:
+
+| Setting | Value |
+|---|---|
+| Match | `Request Path` starts with `/api/` |
+| Algorithm | Fixed window |
+| Window | 60s |
+| Limit | 20 requests |
+| Counting key | IP address |
+| Action | Log, pending a switch to Deny (429) once real traffic is observed |
+
+The rule runs at the edge, so a rejected request never invokes a function and never reaches Databricks — an in-process limiter would already have paid for the invocation, and would not share counters across serverless instances. The static pages are unaffected because only `/api/` paths match.
+
+Two limits are worth recording. Counters are tracked per region, so traffic arriving in several regions can exceed the configured limit in aggregate. And the Hobby plan allows one rate-limit rule per project, so search and chat share a single policy despite chat being the more expensive endpoint; separate policies would need a plan that permits more rules.
 
 ## Repository structure
 
