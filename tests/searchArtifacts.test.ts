@@ -7,6 +7,7 @@ import { DEFAULT_BM25_CONFIG } from "../src/lib/search/bm25";
 import { fixtureDigest, fixtureDocuments, fixtureEmbeddingArtifact, fixtureManifest, fixtureMatrix } from "./fixtures";
 
 const table = (overrides: Record<string, unknown> = {}) => ({ version: ARTIFACT_VERSION, count: fixtureDocuments.length, corpusSha256: fixtureDigest(), documents: fixtureDocuments, ...overrides });
+const reworded = fixtureDocuments.map((document) => ({ ...document, chunkText: `${document.chunkText} REWRITTEN` }));
 
 describe("document table validation", () => {
   it("accepts a well-formed table", () => {
@@ -20,9 +21,17 @@ describe("document table validation", () => {
     expect(() => parseDocumentTable(table({ documents: [] }))).toThrow(/no documents/);
   });
 
+  it("rejects a table whose contents do not match the digest it records", () => {
+    // Localises a hand-edited or truncated document file to this artifact rather than blaming
+    // the manifest it is compared against later.
+    expect(() => parseDocumentTable(table({ documents: reworded }))).toThrow(/do not match the corpus digest it records/);
+    expect(() => parseDocumentTable(table({ corpusSha256: "" }))).toThrow(/does not record which corpus/);
+  });
+
   it("rejects a row missing text or with a non-numeric page range", () => {
     expect(() => parseDocumentTable(table({ documents: [{ ...fixtureDocuments[0], chunkText: "" }], count: 1 }))).toThrow(/missing chunkText/);
     expect(() => parseDocumentTable(table({ documents: [{ ...fixtureDocuments[0], pageStart: "one" }], count: 1 }))).toThrow(/invalid page range/);
+    expect(() => parseDocumentTable(table({ documents: [], count: 0 }))).toThrow(/no documents/);
   });
 });
 
@@ -108,8 +117,15 @@ describe("cross-artifact consistency", () => {
     expect(() => parseBm25Artifact(undefined)).toThrow(SearchIndexError);
   });
 
-  it("rejects an embedding artifact that records no corpus digest", () => {
+  it("rejects an embedding artifact that records no corpus digest or provider", () => {
     expect(() => parseEmbeddingArtifact(fixtureEmbeddingArtifact({ corpusSha256: "" }))).toThrow(/does not record which corpus/);
+    expect(() => parseEmbeddingArtifact(fixtureEmbeddingArtifact({ provider: "" }))).toThrow(/does not record which provider/);
+  });
+
+  it("rejects a matrix produced by a provider the manifest does not name", () => {
+    // A model name does not imply a vector space. A hand-mixed set can otherwise agree on
+    // digest, model, dimensions, and count while the vectors came from a different gateway.
+    expect(() => assemble({ embeddings: { ...fixtureMatrix(), provider: "other-gateway" } })).toThrow(/produced by other-gateway but the manifest records fixture/);
   });
 
   it("hashes length-prefixed fields so a separator inside a passage cannot forge a match", () => {
