@@ -1,5 +1,9 @@
 export class EmbeddingServiceError extends Error {
-  constructor(public status: number, message: string) { super(message); }
+  /** `retryable` marks a failure that a later attempt could plausibly survive — rate limiting, a
+   *  timeout, an unreachable host, an upstream outage. A malformed or contract-violating response
+   *  is not retryable: repeating it wastes the build's time and money to fail identically.
+   *  Status alone cannot express this, because both classes surface as 502. */
+  constructor(public status: number, message: string, public retryable = false) { super(message); }
 }
 
 /** The only surface retrieval depends on. Swapping OpenAI for another pay-per-request provider

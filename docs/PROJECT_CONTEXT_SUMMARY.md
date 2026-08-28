@@ -31,6 +31,12 @@ index, a base64 Float32 embedding matrix, and a manifest recording the source fi
 size, embedding model and dimensions, BM25 configuration, and tokenizer version. Nothing embeds
 the corpus during a web request.
 
+Every artifact carries a SHA-256 digest of the corpus it was derived from, computed over
+length-prefixed chunk IDs *and* chunk text. Because the files are positional — row `i` of the
+embedding matrix is document `i` — the digests are cross-checked at load, so a partial rebuild
+fails loudly instead of attaching vectors to text they were not built from. Hashing chunk IDs
+alone was not enough: editing a passage while keeping its ID left an ID-only digest unchanged.
+
 - **FULL_TEXT** scores BM25 (`k1 = 1.2`, `b = 0.75`) against the precomputed index. It makes no
   network call at all and works with no API key.
 - **ANN** makes exactly one embedding request for the query, then computes cosine similarity
@@ -68,7 +74,8 @@ Recall@1 0.8333, Recall@3 0.9444, Recall@5 1.0000, MRR 0.8907; FULL_TEXT 0.8889,
 0.9444, 1.0000, 0.9278; FULL_TEXT 0.7778, 0.9444, 0.9444, 0.8598; HYBRID 0.8889, 1.0000, 1.0000,
 0.9259.
 
-The migration traded coverage for precision. Lexical retrieval improved clearly. Hybrid became
+These are development-set figures: the same 18 queries selected the configuration and then
+reported it, with no held-out test set. The migration traded coverage for precision. Lexical retrieval improved clearly. Hybrid became
 sharper at rank one and leads on MRR, but lost the perfect top-three coverage Databricks hybrid
 had. Semantic retrieval regressed slightly at rank one. Sixteen of eighteen queries are answered
 at rank one by all three methods, so the comparison rests on two queries.

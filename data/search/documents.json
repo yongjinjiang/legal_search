@@ -1,6 +1,7 @@
 {
-  "version": 1,
+  "version": 2,
   "count": 234,
+  "corpusSha256": "c531c885148da0db702eeefce77d8a509e995a674847d5e99b85fda7fcf39aec",
   "documents": [
     {
       "chunkId": "burlington_white__0001",

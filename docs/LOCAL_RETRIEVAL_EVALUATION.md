@@ -53,6 +53,11 @@ one implementation can produce is not a measurement.
 | HYBRID | Recall@5 | 1.0000 | 0.9444 | **−0.0556** |
 | HYBRID | MRR | 0.9259 | 0.9537 | **+0.0278** |
 
+**These are development-set numbers.** The same 18 queries chose the embedding model and
+dimensions, the BM25 parameters, and the RRF candidate depth, and are then used to report the
+result. There is no held-out test set, so this table accurately describes the committed engine on
+this benchmark but is not an unbiased estimate of performance on unseen queries.
+
 **The quality gate is met but not exceeded.** The stated bar was HYBRID Recall@3 ≥ 0.94, ideally
 1.0. The local engine reaches 0.9444: it meets the bar and misses the ideal. That single missing
 query is Q17, analysed below, and no amount of parameter tuning recovered it.
@@ -194,7 +199,8 @@ Findings:
 **Caveat on reproducibility.** OpenAI embeddings are not bit-identical across calls. Re-embedding
 the corpus at `3-large@1024` moved Q18's ANN rank between 4 and 5 across two builds, shifting ANN
 MRR between 0.8935 and 0.8907. Ranks that are this close together should be read as ties. The
-committed artifact produces 0.8907.
+committed artifact produces 0.8907; a third full re-embed, performed when the artifacts were
+rebuilt for the integrity digest, reproduced every metric in the headline table exactly.
 
 ## BM25 observations
 
@@ -256,6 +262,11 @@ MRR gain appears only on the two large-model indexes, not on `3-small`. `k = 60`
 literature default because it made no measurable difference at any depth.
 
 ## What this evaluation does not establish
+
+Configuration selection and final reporting used the same 18-query development benchmark. Every
+number here is in-sample: no held-out generalization estimate exists. Splitting 18 queries into
+train and test would leave neither half able to measure anything, so the honest fix is not a split
+but a separately authored, expert-graded test set collected after freezing this configuration.
 
 The corpus is 8 opinions and 234 chunks. The benchmark is 18 queries with author-created relevance
 judgments. Sixteen of those queries are solved at rank one by all three methods, so the entire

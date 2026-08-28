@@ -33,6 +33,11 @@ rose from 0.7778 to 0.8889 and MRR from 0.8598 to 0.9153. Hybrid became sharper 
 top-five coverage the Databricks hybrid achieved. Semantic retrieval regressed at rank one, from
 0.8889 to 0.8333, while holding Recall@3 and Recall@5.
 
+These are development-set results: the same 18 queries selected the embedding model and
+dimensions, the BM25 parameters, and the RRF depth, and are then used to report the outcome. No
+held-out test set exists, so the table describes the committed engine on this benchmark rather
+than estimating performance on unseen queries.
+
 Sixteen of the eighteen queries are answered at rank one by every method, so the whole comparison
 rests on Q17, Q18, and small MRR differences. Differences of this size, on 18 author-labelled
 queries, do not establish that one retrieval system is better than another in general.

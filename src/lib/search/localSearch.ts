@@ -15,7 +15,13 @@ function toChunks(index: LocalSearchIndex, ranked: Array<{ index: number; score:
 }
 
 async function embedQuery(query: string, index: LocalSearchIndex): Promise<number[]> {
-  const provider = embeddingProvider();
+  let provider;
+  // An invalid OPENAI_EMBEDDING_DIMENSIONS is now a thrown configuration error rather than a
+  // silent fallback, so it has to reach the caller as a public-safe retrieval error.
+  try { provider = embeddingProvider(); } catch (error) {
+    if (error instanceof EmbeddingServiceError) throw new SearchServiceError(error.status, error.message);
+    throw error;
+  }
   // Never fall back to lexical or mock results here: a visitor who selected semantic search must
   // be told the semantic path is unavailable rather than shown a different ranking labelled ANN.
   if (!provider) throw new SearchServiceError(503, "Semantic search is not configured on this deployment. Full text search remains available.");

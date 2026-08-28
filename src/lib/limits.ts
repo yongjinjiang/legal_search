@@ -10,9 +10,15 @@ export const DEFAULT_CHUNK_RESULTS = 20;
 
 /** Embeddings. One query embedding per ANN or HYBRID search; FULL_TEXT makes no network call. */
 export const EMBEDDING_TIMEOUT_MS = 10_000;
-/** Offline builder only: the OpenAI embeddings endpoint accepts batched inputs, so the 234-chunk
- *  corpus is built in a handful of requests rather than 234. */
-export const EMBEDDING_BATCH_SIZE = 64;
+/** Offline builder only: the embeddings endpoint accepts batched inputs, so the 234-chunk corpus
+ *  is built in a handful of requests rather than 234. Sized against tokens, not documents: at
+ *  ~900 tokens per chunk a batch of 64 is ~60k tokens in one request, which exceeds the
+ *  per-request and per-minute ceilings on lower OpenAI usage tiers and fails as "Request too
+ *  large". Sixteen keeps a batch near 16k tokens. Override with --batch-size. */
+export const EMBEDDING_BATCH_SIZE = 16;
+/** Build-time retry budget for a rate-limited or transient provider failure. Query-time calls
+ *  deliberately do not retry: a visitor waiting on a search should get a fast, honest error. */
+export const EMBEDDING_BUILD_RETRY_DELAYS_MS = [2_000, 6_000, 18_000, 45_000];
 
 /** Technical guide. */
 export const MAX_QUESTION_LENGTH = 3000;

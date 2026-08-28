@@ -1,6 +1,6 @@
 import { ARTIFACT_VERSION, EMBEDDING_DTYPE, type IndexDocument, type IndexManifest, type LocalSearchIndex } from "../../src/lib/search/artifacts";
 import { DEFAULT_BM25_CONFIG, buildBm25Index } from "../../src/lib/search/bm25";
-import { chunkOrderDigest } from "../../src/lib/search/localIndex";
+import { corpusDigest } from "../../src/lib/search/localIndex";
 import { l2Normalize, type EmbeddingMatrix } from "../../src/lib/search/semanticSearch";
 
 export const FIXTURE_MODEL = "fixture-embed";
@@ -24,10 +24,12 @@ const RAW_VECTORS: number[][] = [
   [0, 0, 0.6, 0.8],
 ];
 
+export const fixtureDigest = () => corpusDigest(fixtureDocuments);
+
 export function fixtureMatrix(): EmbeddingMatrix {
   const data = new Float32Array(fixtureDocuments.length * FIXTURE_DIMENSIONS);
   RAW_VECTORS.forEach((vector, row) => data.set(l2Normalize(vector), row * FIXTURE_DIMENSIONS));
-  return { data, docCount: fixtureDocuments.length, dimensions: FIXTURE_DIMENSIONS, model: FIXTURE_MODEL };
+  return { data, docCount: fixtureDocuments.length, dimensions: FIXTURE_DIMENSIONS, model: FIXTURE_MODEL, corpusSha256: fixtureDigest() };
 }
 
 export function fixtureEmbeddingArtifact(overrides: Record<string, unknown> = {}) {
@@ -38,6 +40,7 @@ export function fixtureEmbeddingArtifact(overrides: Record<string, unknown> = {}
     model: FIXTURE_MODEL,
     dimensions: FIXTURE_DIMENSIONS,
     count: fixtureDocuments.length,
+    corpusSha256: fixtureDigest(),
     dtype: EMBEDDING_DTYPE,
     normalized: true,
     data: Buffer.from(matrix.data.buffer, matrix.data.byteOffset, matrix.data.byteLength).toString("base64"),
@@ -52,7 +55,7 @@ export function fixtureManifest(overrides: Partial<IndexManifest> = {}): IndexMa
     rowCount: fixtureDocuments.length,
     sourceFile: "tests/fixtures/index.ts",
     sourceSha256: "0".repeat(64),
-    chunkOrderSha256: chunkOrderDigest(fixtureDocuments.map((document) => document.chunkId)),
+    corpusSha256: fixtureDigest(),
     embedding: { provider: "fixture", model: FIXTURE_MODEL, dimensions: FIXTURE_DIMENSIONS },
     bm25: DEFAULT_BM25_CONFIG,
     tokenizerVersion: "legal-en-v1",
@@ -64,7 +67,7 @@ export function fixtureIndex(): LocalSearchIndex {
   return {
     manifest: fixtureManifest(),
     documents: fixtureDocuments,
-    bm25: buildBm25Index(fixtureDocuments.map((document) => document.chunkText)),
+    bm25: buildBm25Index(fixtureDocuments.map((document) => document.chunkText), DEFAULT_BM25_CONFIG, fixtureDigest()),
     embeddings: fixtureMatrix(),
   };
 }
