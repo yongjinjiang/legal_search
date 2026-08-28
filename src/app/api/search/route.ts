@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { searchCases, SearchServiceError } from "@/lib/databricks/search";
+import { searchCases, SearchServiceError } from "@/lib/search/backend";
 import { searchRequestSchema } from "@/lib/search/validation";
 
 // A malformed body is a client error, so it is parsed outside the service try/catch to keep it a 400 rather than a retryable 500.

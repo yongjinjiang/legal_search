@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { GET as health } from "../src/app/api/health/route";
 import { POST as search } from "../src/app/api/search/route";
 import { loadProjectContext } from "../src/lib/chat/contextLoader";
-import { answerProjectQuestion } from "../src/lib/databricks/chat";
+import { answerProjectQuestion } from "../src/lib/chat/guide";
 import { mockSearch } from "../src/lib/search/mockSearch";
 
 const originalEnv = { ...process.env };
@@ -14,8 +14,9 @@ afterEach(() => {
 
 describe.sequential("service integration", () => {
   it("reports mock health and serves grouped mock search results", async () => {
-    process.env.MOCK_DATABRICKS = "true";
-    const healthResponse = health();
+    process.env.MOCK_SEARCH = "true";
+    delete process.env.OPENAI_API_KEY;
+    const healthResponse = await health();
     expect(healthResponse.status).toBe(200);
     await expect(healthResponse.json()).resolves.toMatchObject({ status: "degraded", searchMode: "mock", searchConfigured: true, chatConfigured: false });
 
@@ -30,8 +31,9 @@ describe.sequential("service integration", () => {
     expect(payload.results.length).toBeLessThanOrEqual(5);
   });
 
-  it("calls live Databricks search through the route with server credentials", async () => {
-    process.env.MOCK_DATABRICKS = "false";
+  it("still reaches Databricks when the optional comparison backend is selected", async () => {
+    process.env.MOCK_SEARCH = "false";
+    process.env.SEARCH_BACKEND = "databricks";
     process.env.DATABRICKS_HOST = "https://workspace.example";
     process.env.DATABRICKS_TOKEN = "secret";
     process.env.DATABRICKS_INDEX_NAME = "catalog.schema.index";
@@ -59,9 +61,7 @@ describe.sequential("service integration", () => {
   });
 
   it("sends only the system context and current user question to chat", async () => {
-    process.env.DATABRICKS_HOST = "https://workspace.example";
-    process.env.DATABRICKS_TOKEN = "secret";
-    process.env.DATABRICKS_CHAT_MODEL = "guide";
+    process.env.OPENAI_API_KEY = "test-key";
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: "Grounded answer" } }] }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -73,9 +73,7 @@ describe.sequential("service integration", () => {
   });
 
   it("keeps retrieval state out of the system message", async () => {
-    process.env.DATABRICKS_HOST = "https://workspace.example";
-    process.env.DATABRICKS_TOKEN = "secret";
-    process.env.DATABRICKS_CHAT_MODEL = "guide";
+    process.env.OPENAI_API_KEY = "test-key";
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: "Answer" } }] }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
     await answerProjectQuestion("Explain", "standard", {
@@ -103,5 +101,13 @@ describe.sequential("service integration", () => {
     expect(first).toEqual(second);
     expect(first).toHaveLength(3);
     expect(first[0].caseId).toBe("crawford_nashville");
+  });
+});
+
+describe("mock retrieval labelling", () => {
+  it("marks every mock passage so it cannot be mistaken for a measured result", () => {
+    // Production must never enable this path, but a fixture that is copied out of the page still
+    // has to identify itself.
+    for (const chunk of mockSearch("retaliation", "HYBRID", 6)) expect(chunk.chunkText).toContain("[MOCK DEVELOPMENT RESULT");
   });
 });

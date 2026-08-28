@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_QUERY_LENGTH } from "@/lib/limits";
 import { MAX_CASE_RESULTS, QUERY_TYPES } from "@/lib/search/types";
 
 const contextResultSchema = z.object({
@@ -23,3 +24,10 @@ export const chatRequestSchema = z.object({
 });
 
 export type SearchContext = z.infer<typeof searchContextSchema>;
+
+// The research summary re-runs retrieval on the server rather than trusting passages posted by
+// the browser, so the request carries only the query and the method the visitor had selected.
+export const summaryRequestSchema = z.object({
+  query: z.string().trim().min(3, "Enter a more specific legal question.").max(MAX_QUERY_LENGTH, "Keep the question under 2,000 characters."),
+  queryType: z.enum(QUERY_TYPES).default("HYBRID"),
+});

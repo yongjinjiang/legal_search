@@ -3,15 +3,11 @@ import { POST } from "../src/app/api/chat/route";
 
 const originalEnv = { ...process.env };
 
-afterEach(() => {
-  process.env = { ...originalEnv };
-});
+afterEach(() => { process.env = { ...originalEnv }; });
 
 describe("chat API errors", () => {
   it("returns deliberate configuration errors", async () => {
-    delete process.env.DATABRICKS_HOST;
-    delete process.env.DATABRICKS_TOKEN;
-    delete process.env.DATABRICKS_CHAT_MODEL;
+    delete process.env.OPENAI_API_KEY;
     const response = await POST(new Request("http://localhost/api/chat", {
       method: "POST",
       body: JSON.stringify({ question: "How does search work?" }),
@@ -21,9 +17,7 @@ describe("chat API errors", () => {
   });
 
   it("rejects malformed retrieval context before model invocation", async () => {
-    process.env.DATABRICKS_HOST = "https://example.invalid";
-    process.env.DATABRICKS_TOKEN = "secret";
-    process.env.DATABRICKS_CHAT_MODEL = "model";
+    process.env.OPENAI_API_KEY = "test-key";
     const response = await POST(new Request("http://localhost/api/chat", {
       method: "POST",
       body: JSON.stringify({ question: "Explain this.", search: {} }),

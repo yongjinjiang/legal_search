@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:index": "vite-node -c vitest.config.ts scripts/build_search_index.ts --",
+    "benchmark": "vite-node -c vitest.config.ts scripts/evaluate_local_retrieval.ts --"
   },
   "dependencies": {
     "@fontsource/dm-mono": "^5.2.6",
@@ -28,6 +30,7 @@
     "eslint": "^9.17.0",
     "eslint-config-next": "^15.5.2",
     "typescript": "^5.7.2",
+    "vite-node": "^3.2.4",
     "vitest": "^3.2.4"
   }
 }

@@ -1,6 +1,10 @@
-import { collapseToCases } from "@/lib/search/caseRanking";
-import { MAX_CASE_RESULTS, type CaseResult, type QueryType, type SearchChunk } from "@/lib/search/types";
+import { SearchServiceError } from "@/lib/search/errors";
+import type { QueryType, SearchChunk } from "@/lib/search/types";
 import { databricksConnection, fetchWithTimeout } from "@/lib/databricks/client";
+
+// Historical / optional comparison backend. The public deployment runs the local engine in
+// src/lib/search/localSearch.ts and requires no Databricks credentials; this adapter is kept so
+// the original AI Search prototype can still be re-measured with the same benchmark harness.
 
 const COLUMNS = ["chunk_id", "case_id", "case_name", "citation", "page_start", "page_end", "chunk_text"];
 const MAX_LOG_VALUE_LENGTH = 500;
@@ -13,8 +17,6 @@ type DatabricksErrorDetails = {
   message: string;
   requestId?: string;
 };
-
-export class SearchServiceError extends Error { constructor(public status: number, message: string) { super(message); } }
 
 /** Keep useful Databricks diagnostics while removing common credential and PII forms. */
 export function sanitizeDatabricksLogValue(value: unknown): string {
@@ -75,7 +77,7 @@ export function parseDatabricksResults(payload: unknown): SearchChunk[] {
   });
 }
 
-async function liveSearch(query: string, queryType: QueryType, numResults: number): Promise<SearchChunk[]> {
+export async function databricksSearchChunks(query: string, queryType: QueryType, numResults: number): Promise<SearchChunk[]> {
   const { host, token } = databricksConnection(); const index = process.env.DATABRICKS_INDEX_NAME;
   if (!host || !token || !index) throw new SearchServiceError(503, "Live search is not configured. Enable mock mode or add Databricks server credentials.");
   try {
@@ -98,8 +100,4 @@ async function liveSearch(query: string, queryType: QueryType, numResults: numbe
   } catch (error) { if (error instanceof SearchServiceError) throw error; if ((error as Error).name === "AbortError") throw new SearchServiceError(504, "Search timed out. Please try again."); throw new SearchServiceError(502, "Unable to reach the search service."); }
 }
 
-export async function searchCases(query: string, queryType: QueryType, numResults = 20): Promise<{ results: CaseResult[]; mock: boolean }> {
-  const mock = process.env.MOCK_DATABRICKS === "true";
-  const chunks = mock ? (await import("@/lib/search/mockSearch")).mockSearch(query, queryType, numResults) : await liveSearch(query, queryType, numResults);
-  return { results: collapseToCases(chunks, queryType, MAX_CASE_RESULTS), mock };
-}
+export { SearchServiceError };
