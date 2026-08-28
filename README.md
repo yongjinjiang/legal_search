@@ -216,12 +216,19 @@ Recall@1 and failed to retrieve *Thompson* on Q17 at all, so it was rejected on 
 | Site idle | **none** — no provisioned service of any kind |
 | Full-text search | none |
 | Semantic or hybrid search | 1 embedding request (~50 tokens, ~$0.000007) |
-| Technical guide question | 1 chat request (~750–5,600 input tokens) |
-| Research summary | 1 embedding + 1 chat request (~4,000 input tokens) |
+| Technical guide question | 1 chat request (~750–5,900 input tokens, up to 3,200 output) |
+| Research summary | 1 embedding + 1 chat request (~3,800 input, up to 4,000 output) |
 | Rebuilding the index | ~207,000 embedding tokens, roughly $0.03, once |
 
 Searching never invokes a language model. The research summary is a separate endpoint behind an
 explicit button, so a legal query reaches an LLM only when a visitor asks it to.
+
+The output-token caps are sized above a measured cliff rather than guessed. `gpt-5-mini` spends
+`max_completion_tokens` on reasoning tokens *before* emitting any visible text, so a cap that
+looks generous for the answer can be consumed entirely by reasoning and return a well-formed
+response with empty content. At 2,000 tokens the summary prompt produced 2,000 reasoning tokens
+and no output; at 3,000 reasoning fell to 256 and it produced ~9,500 characters. Both routes
+declare `maxDuration = 60` and time out below it, because a detailed answer runs 20–35 seconds.
 
 ## Vercel deployment
 
@@ -303,7 +310,7 @@ regions can exceed the configured limit in aggregate. The Hobby plan allows one 
 per project, so search, chat, and summarize share a single policy despite their costs differing
 by three orders of magnitude; full-text search, which is free, is throttled by the same rule as
 summarization, which is not. And the limit bounds exposure without making it small: a single IP
-staying just inside 20 requests/minute against `/api/summarize` is roughly $144/day. A hard spend
+staying just inside 20 requests/minute against `/api/summarize` is roughly $258/day. A hard spend
 cap on the provider account is the only control that survives the per-region gap, and is the more
 important of the two.
 

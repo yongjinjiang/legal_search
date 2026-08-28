@@ -38,9 +38,33 @@ describe("OpenAI chat provider", () => {
     expect(body).not.toHaveProperty("max_completion_tokens");
   });
 
+  it("logs the token accounting when a reasoning model returns nothing", async () => {
+    // This failure is a configuration fault, not an outage: the budget is consumed by reasoning
+    // tokens before any text is emitted, and it recurs until the cap is raised. Without the token
+    // accounting in the log it is indistinguishable from a transient provider problem — which is
+    // exactly how it reached production once.
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      choices: [{ message: { content: "" }, finish_reason: "length" }],
+      usage: { prompt_tokens: 3776, completion_tokens: 2000, completion_tokens_details: { reasoning_tokens: 2000 } },
+    }), { status: 200 })));
+    await expect(createOpenAIChatProvider(settings).complete([{ role: "user", content: "hi" }], options)).rejects.toThrow(/length budget/);
+    expect(error).toHaveBeenCalledWith("[llm] empty completion", expect.objectContaining({ finishReason: "length", maxOutputTokens: 100, reasoningTokens: 2000, completionTokens: 2000 }));
+  });
+
+  it("logs a transport failure that never produced a response", async () => {
+    // Previously this path threw with no log line at all, which made a user report of "the
+    // service is temporarily unavailable" impossible to diagnose from production logs.
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(Object.assign(new Error("fetch failed"), { name: "TypeError", cause: { code: "ECONNRESET", message: "socket hang up" } })));
+    await expect(createOpenAIChatProvider(settings).complete([{ role: "user", content: "hi" }], options)).rejects.toThrow(/Unable to reach/);
+    expect(error).toHaveBeenCalledWith("[llm] request did not complete", expect.objectContaining({ name: "TypeError", code: "ECONNRESET" }));
+  });
+
   it("treats an empty completion as a failure rather than a blank answer", async () => {
     // A reasoning model spends the same budget on reasoning tokens, so exhausting it returns a
     // well-formed 200 with no content.
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(reply("", "length")));
     await expect(createOpenAIChatProvider(settings).complete([{ role: "user", content: "hi" }], options)).rejects.toThrow(/length budget/);
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ choices: [] }), { status: 200 })));
