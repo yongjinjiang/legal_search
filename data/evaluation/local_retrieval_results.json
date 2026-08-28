@@ -1,0 +1,845 @@
+{
+  "schema_version": 2,
+  "generated_at": "2026-08-28T03:56:07.901Z",
+  "label": "production: text-embedding-3-large@1024, BM25 k1=1.2 b=0.75, RRF k=60 depth=30",
+  "backend": "local",
+  "index_name": "data/search",
+  "index_manifest": {
+    "version": 1,
+    "generatedAt": "2026-08-28T03:55:54.338Z",
+    "rowCount": 234,
+    "sourceFile": "data/chunks/legal_chunks.csv",
+    "sourceSha256": "4e41abed5b46a6ee7c07ddb6e7ab265d908e4a6f41b4c94ca01995809c49d59b",
+    "chunkOrderSha256": "76e2a3a1f238ca83f972c1a6dd40bbe246c1ca5b20a09b3091f15e9406909c6e",
+    "embedding": {
+      "provider": "openai",
+      "model": "text-embedding-3-large",
+      "dimensions": 1024
+    },
+    "bm25": {
+      "k1": 1.2,
+      "b": 0.75,
+      "foldSuffixes": false
+    },
+    "tokenizerVersion": "legal-en-v1"
+  },
+  "num_chunk_results": 20,
+  "query_file": "data/evaluation/legal_search_queries.csv",
+  "query_file_sha256": "e95a5693900554aac7b85a7a412a824f409fb0924068b1af4a2aecd2528d5221",
+  "scores": {
+    "HYBRID": {
+      "queries": 18,
+      "recall_at_1": 0.9444444444444444,
+      "recall_at_3": 0.9444444444444444,
+      "recall_at_5": 0.9444444444444444,
+      "mrr": 0.9537037037037037,
+      "unranked_gold": 0,
+      "censored_misses": 0,
+      "any_relevant_at_3": 1,
+      "any_relevant_at_5": 1,
+      "set_recall_at_3": 0.9404761904761904,
+      "set_recall_at_5": 0.9563492063492064,
+      "set_recall_at_10": 0.9920634920634921
+    },
+    "ANN": {
+      "queries": 18,
+      "recall_at_1": 0.8333333333333334,
+      "recall_at_3": 0.9444444444444444,
+      "recall_at_5": 1,
+      "mrr": 0.8907407407407408,
+      "unranked_gold": 0,
+      "censored_misses": 0,
+      "any_relevant_at_3": 1,
+      "any_relevant_at_5": 1,
+      "set_recall_at_3": 0.9682539682539681,
+      "set_recall_at_5": 0.9841269841269842,
+      "set_recall_at_10": 0.9841269841269842
+    },
+    "FULL_TEXT": {
+      "queries": 18,
+      "recall_at_1": 0.8888888888888888,
+      "recall_at_3": 0.9444444444444444,
+      "recall_at_5": 0.9444444444444444,
+      "mrr": 0.9153439153439152,
+      "unranked_gold": 0,
+      "censored_misses": 0,
+      "any_relevant_at_3": 0.9444444444444444,
+      "any_relevant_at_5": 1,
+      "set_recall_at_3": 0.9126984126984126,
+      "set_recall_at_5": 0.9484126984126985,
+      "set_recall_at_10": 0.9920634920634921
+    }
+  },
+  "runs": [
+    {
+      "query_id": "Q01",
+      "method": "HYBRID",
+      "primary_gold_case": "burlington_white",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "burlington_white",
+        "nassar",
+        "thompson_nas",
+        "bostock_clayton",
+        "kasten_saint_gobain"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q01",
+      "method": "ANN",
+      "primary_gold_case": "burlington_white",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "nassar",
+        "burlington_white",
+        "thompson_nas",
+        "crawford_nashville"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q01",
+      "method": "FULL_TEXT",
+      "primary_gold_case": "burlington_white",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "burlington_white",
+        "bostock_clayton",
+        "kasten_saint_gobain",
+        "jackson_birmingham",
+        "nassar",
+        "murray_ubs"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q02",
+      "method": "HYBRID",
+      "primary_gold_case": "burlington_white",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "burlington_white",
+        "nassar",
+        "thompson_nas"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q02",
+      "method": "ANN",
+      "primary_gold_case": "burlington_white",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "burlington_white",
+        "nassar",
+        "thompson_nas"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q02",
+      "method": "FULL_TEXT",
+      "primary_gold_case": "burlington_white",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "burlington_white",
+        "thompson_nas",
+        "crawford_nashville",
+        "nassar"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q03",
+      "method": "HYBRID",
+      "primary_gold_case": "crawford_nashville",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "crawford_nashville",
+        "burlington_white",
+        "thompson_nas",
+        "kasten_saint_gobain",
+        "murray_ubs"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q03",
+      "method": "ANN",
+      "primary_gold_case": "crawford_nashville",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "crawford_nashville",
+        "kasten_saint_gobain",
+        "burlington_white",
+        "nassar",
+        "thompson_nas"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q03",
+      "method": "FULL_TEXT",
+      "primary_gold_case": "crawford_nashville",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "crawford_nashville",
+        "burlington_white",
+        "thompson_nas",
+        "murray_ubs",
+        "bostock_clayton"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q04",
+      "method": "HYBRID",
+      "primary_gold_case": "crawford_nashville",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "crawford_nashville",
+        "burlington_white",
+        "nassar",
+        "kasten_saint_gobain"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q04",
+      "method": "ANN",
+      "primary_gold_case": "crawford_nashville",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "crawford_nashville",
+        "burlington_white",
+        "nassar",
+        "thompson_nas"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q04",
+      "method": "FULL_TEXT",
+      "primary_gold_case": "crawford_nashville",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "crawford_nashville",
+        "burlington_white",
+        "bostock_clayton",
+        "murray_ubs",
+        "kasten_saint_gobain",
+        "nassar"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q05",
+      "method": "HYBRID",
+      "primary_gold_case": "thompson_nas",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "thompson_nas",
+        "burlington_white",
+        "bostock_clayton",
+        "crawford_nashville",
+        "nassar"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q05",
+      "method": "ANN",
+      "primary_gold_case": "thompson_nas",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "thompson_nas",
+        "nassar",
+        "burlington_white",
+        "jackson_birmingham",
+        "bostock_clayton"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q05",
+      "method": "FULL_TEXT",
+      "primary_gold_case": "thompson_nas",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "thompson_nas",
+        "bostock_clayton",
+        "burlington_white",
+        "crawford_nashville"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q06",
+      "method": "HYBRID",
+      "primary_gold_case": "thompson_nas",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "thompson_nas",
+        "burlington_white",
+        "nassar",
+        "crawford_nashville",
+        "jackson_birmingham"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q06",
+      "method": "ANN",
+      "primary_gold_case": "thompson_nas",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "thompson_nas",
+        "burlington_white",
+        "nassar",
+        "crawford_nashville"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q06",
+      "method": "FULL_TEXT",
+      "primary_gold_case": "thompson_nas",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "thompson_nas",
+        "jackson_birmingham",
+        "burlington_white",
+        "crawford_nashville",
+        "nassar"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q07",
+      "method": "HYBRID",
+      "primary_gold_case": "nassar",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "nassar",
+        "bostock_clayton"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q07",
+      "method": "ANN",
+      "primary_gold_case": "nassar",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "nassar",
+        "burlington_white"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q07",
+      "method": "FULL_TEXT",
+      "primary_gold_case": "nassar",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "nassar",
+        "bostock_clayton"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q08",
+      "method": "HYBRID",
+      "primary_gold_case": "nassar",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "nassar",
+        "burlington_white",
+        "murray_ubs",
+        "bostock_clayton"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q08",
+      "method": "ANN",
+      "primary_gold_case": "nassar",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "nassar",
+        "burlington_white"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q08",
+      "method": "FULL_TEXT",
+      "primary_gold_case": "nassar",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "nassar",
+        "murray_ubs",
+        "bostock_clayton"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q09",
+      "method": "HYBRID",
+      "primary_gold_case": "murray_ubs",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "murray_ubs",
+        "crawford_nashville",
+        "kasten_saint_gobain",
+        "thompson_nas",
+        "burlington_white"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q09",
+      "method": "ANN",
+      "primary_gold_case": "murray_ubs",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "murray_ubs",
+        "crawford_nashville",
+        "burlington_white",
+        "thompson_nas",
+        "nassar"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q09",
+      "method": "FULL_TEXT",
+      "primary_gold_case": "murray_ubs",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "murray_ubs",
+        "kasten_saint_gobain",
+        "crawford_nashville",
+        "jackson_birmingham",
+        "thompson_nas",
+        "nassar"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q10",
+      "method": "HYBRID",
+      "primary_gold_case": "murray_ubs",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "murray_ubs",
+        "burlington_white",
+        "nassar"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q10",
+      "method": "ANN",
+      "primary_gold_case": "murray_ubs",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "murray_ubs",
+        "nassar",
+        "crawford_nashville",
+        "burlington_white"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q10",
+      "method": "FULL_TEXT",
+      "primary_gold_case": "murray_ubs",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "murray_ubs",
+        "nassar",
+        "bostock_clayton"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q11",
+      "method": "HYBRID",
+      "primary_gold_case": "jackson_birmingham",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "jackson_birmingham",
+        "bostock_clayton",
+        "nassar"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q11",
+      "method": "ANN",
+      "primary_gold_case": "jackson_birmingham",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "jackson_birmingham",
+        "bostock_clayton",
+        "nassar"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q11",
+      "method": "FULL_TEXT",
+      "primary_gold_case": "jackson_birmingham",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "jackson_birmingham",
+        "bostock_clayton",
+        "nassar",
+        "burlington_white"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q12",
+      "method": "HYBRID",
+      "primary_gold_case": "jackson_birmingham",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "jackson_birmingham",
+        "bostock_clayton",
+        "nassar"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q12",
+      "method": "ANN",
+      "primary_gold_case": "jackson_birmingham",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "jackson_birmingham",
+        "nassar",
+        "bostock_clayton"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q12",
+      "method": "FULL_TEXT",
+      "primary_gold_case": "jackson_birmingham",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "jackson_birmingham",
+        "bostock_clayton",
+        "nassar"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q13",
+      "method": "HYBRID",
+      "primary_gold_case": "kasten_saint_gobain",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "kasten_saint_gobain",
+        "burlington_white",
+        "crawford_nashville",
+        "jackson_birmingham"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q13",
+      "method": "ANN",
+      "primary_gold_case": "kasten_saint_gobain",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "kasten_saint_gobain",
+        "crawford_nashville",
+        "nassar"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q13",
+      "method": "FULL_TEXT",
+      "primary_gold_case": "kasten_saint_gobain",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "kasten_saint_gobain",
+        "burlington_white",
+        "jackson_birmingham",
+        "thompson_nas"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q14",
+      "method": "HYBRID",
+      "primary_gold_case": "kasten_saint_gobain",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "kasten_saint_gobain",
+        "crawford_nashville"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q14",
+      "method": "ANN",
+      "primary_gold_case": "kasten_saint_gobain",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "kasten_saint_gobain",
+        "crawford_nashville",
+        "nassar"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q14",
+      "method": "FULL_TEXT",
+      "primary_gold_case": "kasten_saint_gobain",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "kasten_saint_gobain",
+        "jackson_birmingham"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q15",
+      "method": "HYBRID",
+      "primary_gold_case": "bostock_clayton",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "bostock_clayton"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q15",
+      "method": "ANN",
+      "primary_gold_case": "bostock_clayton",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "bostock_clayton"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q15",
+      "method": "FULL_TEXT",
+      "primary_gold_case": "bostock_clayton",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "bostock_clayton",
+        "thompson_nas"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q16",
+      "method": "HYBRID",
+      "primary_gold_case": "bostock_clayton",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "bostock_clayton"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q16",
+      "method": "ANN",
+      "primary_gold_case": "bostock_clayton",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "bostock_clayton"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q16",
+      "method": "FULL_TEXT",
+      "primary_gold_case": "bostock_clayton",
+      "other_relevant_cases": [],
+      "ranked_case_ids": [
+        "bostock_clayton"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q17",
+      "method": "HYBRID",
+      "primary_gold_case": "thompson_nas",
+      "other_relevant_cases": [
+        "burlington_white"
+      ],
+      "ranked_case_ids": [
+        "burlington_white",
+        "nassar",
+        "crawford_nashville",
+        "jackson_birmingham",
+        "murray_ubs",
+        "thompson_nas",
+        "bostock_clayton"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q17",
+      "method": "ANN",
+      "primary_gold_case": "thompson_nas",
+      "other_relevant_cases": [
+        "burlington_white"
+      ],
+      "ranked_case_ids": [
+        "nassar",
+        "burlington_white",
+        "thompson_nas"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q17",
+      "method": "FULL_TEXT",
+      "primary_gold_case": "thompson_nas",
+      "other_relevant_cases": [
+        "burlington_white"
+      ],
+      "ranked_case_ids": [
+        "jackson_birmingham",
+        "murray_ubs",
+        "crawford_nashville",
+        "burlington_white",
+        "bostock_clayton",
+        "nassar",
+        "thompson_nas"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q18",
+      "method": "HYBRID",
+      "primary_gold_case": "burlington_white",
+      "other_relevant_cases": [
+        "crawford_nashville",
+        "thompson_nas",
+        "nassar",
+        "murray_ubs",
+        "jackson_birmingham",
+        "kasten_saint_gobain"
+      ],
+      "ranked_case_ids": [
+        "burlington_white",
+        "nassar",
+        "crawford_nashville",
+        "murray_ubs",
+        "thompson_nas",
+        "kasten_saint_gobain",
+        "bostock_clayton"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q18",
+      "method": "ANN",
+      "primary_gold_case": "burlington_white",
+      "other_relevant_cases": [
+        "crawford_nashville",
+        "thompson_nas",
+        "nassar",
+        "murray_ubs",
+        "jackson_birmingham",
+        "kasten_saint_gobain"
+      ],
+      "ranked_case_ids": [
+        "crawford_nashville",
+        "kasten_saint_gobain",
+        "nassar",
+        "thompson_nas",
+        "burlington_white"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    },
+    {
+      "query_id": "Q18",
+      "method": "FULL_TEXT",
+      "primary_gold_case": "burlington_white",
+      "other_relevant_cases": [
+        "crawford_nashville",
+        "thompson_nas",
+        "nassar",
+        "murray_ubs",
+        "jackson_birmingham",
+        "kasten_saint_gobain"
+      ],
+      "ranked_case_ids": [
+        "murray_ubs",
+        "thompson_nas",
+        "burlington_white",
+        "crawford_nashville",
+        "bostock_clayton",
+        "nassar",
+        "kasten_saint_gobain"
+      ],
+      "chunks_returned": 20,
+      "censored": true
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import { searchCases, SearchServiceError } from "@/lib/databricks/search";
+import { searchCases, SearchServiceError } from "@/lib/search/backend";
 import type { QueryType } from "@/lib/search/types";
 
 // Benchmark-adjacent phrasing that every method should match in this corpus. A successful

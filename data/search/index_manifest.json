@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "generatedAt": "2026-08-28T03:55:54.338Z",
+  "rowCount": 234,
+  "sourceFile": "data/chunks/legal_chunks.csv",
+  "sourceSha256": "4e41abed5b46a6ee7c07ddb6e7ab265d908e4a6f41b4c94ca01995809c49d59b",
+  "chunkOrderSha256": "76e2a3a1f238ca83f972c1a6dd40bbe246c1ca5b20a09b3091f15e9406909c6e",
+  "embedding": {
+    "provider": "openai",
+    "model": "text-embedding-3-large",
+    "dimensions": 1024
+  },
+  "bm25": {
+    "k1": 1.2,
+    "b": 0.75,
+    "foldSuffixes": false
+  },
+  "tokenizerVersion": "legal-en-v1"
+}
