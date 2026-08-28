@@ -2,19 +2,21 @@ import { assertUsableIndex, SearchIndexError, type Bm25Config, type Bm25Index } 
 import { assertUsableMatrix, type EmbeddingMatrix } from "./semanticSearch";
 import type { SearchChunk } from "./types";
 
-export const ARTIFACT_VERSION = 1;
+// Bumped to 2 when corpusSha256 was added. Version 1 artifacts cannot prove which corpus they
+// were built from, so they are refused rather than trusted.
+export const ARTIFACT_VERSION = 2;
 export const EMBEDDING_DTYPE = "float32";
 
 export type IndexDocument = Omit<SearchChunk, "rank" | "score">;
-export type DocumentTable = { version: number; count: number; documents: IndexDocument[] };
-export type EmbeddingArtifact = { version: number; provider: string; model: string; dimensions: number; count: number; dtype: string; normalized: boolean; data: string };
+export type DocumentTable = { version: number; count: number; corpusSha256: string; documents: IndexDocument[] };
+export type EmbeddingArtifact = { version: number; provider: string; model: string; dimensions: number; count: number; corpusSha256: string; dtype: string; normalized: boolean; data: string };
 export type IndexManifest = {
   version: number;
   generatedAt: string;
   rowCount: number;
   sourceFile: string;
   sourceSha256: string;
-  chunkOrderSha256: string;
+  corpusSha256: string;
   embedding: { provider: string; model: string; dimensions: number };
   bm25: Bm25Config;
   tokenizerVersion: string;
@@ -49,7 +51,8 @@ export function parseEmbeddingArtifact(raw: unknown): EmbeddingMatrix {
   if (bytes.byteLength !== expected) throw new SearchIndexError(`Embedding payload is ${bytes.byteLength} bytes but its header describes ${expected}.`);
   // Buffer.from(base64) may hand back a view into a pooled ArrayBuffer, so the byteOffset is
   // required; a bare `new Float32Array(bytes.buffer)` would read neighbouring allocations.
-  const matrix: EmbeddingMatrix = { data: new Float32Array(bytes.buffer, bytes.byteOffset, artifact.count * artifact.dimensions), docCount: artifact.count, dimensions: artifact.dimensions, model: artifact.model };
+  if (typeof artifact.corpusSha256 !== "string" || artifact.corpusSha256.length === 0) throw new SearchIndexError("Embedding artifact does not record which corpus it was built from.");
+  const matrix: EmbeddingMatrix = { data: new Float32Array(bytes.buffer, bytes.byteOffset, artifact.count * artifact.dimensions), docCount: artifact.count, dimensions: artifact.dimensions, model: artifact.model, corpusSha256: artifact.corpusSha256 };
   assertUsableMatrix(matrix);
   return matrix;
 }
@@ -65,17 +68,30 @@ export function parseManifest(raw: unknown): IndexManifest {
   const manifest = raw as IndexManifest;
   if (!manifest || typeof manifest !== "object" || manifest.version !== ARTIFACT_VERSION) throw new SearchIndexError("Index manifest is missing or has an unsupported version.");
   if (!manifest.embedding?.model || !Number.isFinite(manifest.embedding?.dimensions)) throw new SearchIndexError("Index manifest does not record the embedding model it was built with.");
+  if (typeof manifest.corpusSha256 !== "string" || manifest.corpusSha256.length === 0) throw new SearchIndexError("Index manifest does not record a corpus digest.");
   return manifest;
 }
 
-/** Cross-check the three artifacts against each other and against the manifest. They are built
- *  together but committed as separate files, so a partial rebuild is the realistic failure and
- *  it must surface as a configuration error rather than as a silently misaligned ranking. */
-export function assembleIndex(manifest: IndexManifest, documents: IndexDocument[], bm25: Bm25Index, embeddings: EmbeddingMatrix): LocalSearchIndex {
+/** Cross-check every artifact against the manifest and against the corpus actually shipped.
+ *
+ *  The files are built together but committed separately, so a partial rebuild — or a manually
+ *  mixed set — is the realistic failure. Row counts alone do not catch it: stale vectors for
+ *  rewritten passages have exactly the right count. Each artifact therefore carries the digest
+ *  of the corpus it was derived from, and `corpusSha256` here is recomputed from the shipped
+ *  document text rather than read from any file that could be stale.
+ *
+ *  BM25 configuration and tokenizer version are compared too, because postings built with
+ *  different parameters score correctly but rank differently from what the manifest advertises. */
+export function assembleIndex(manifest: IndexManifest, documents: IndexDocument[], bm25: Bm25Index, embeddings: EmbeddingMatrix, corpusSha256: string): LocalSearchIndex {
   if (documents.length !== manifest.rowCount) throw new SearchIndexError(`Manifest declares ${manifest.rowCount} rows but the document table holds ${documents.length}.`);
   if (bm25.docCount !== documents.length) throw new SearchIndexError(`BM25 index covers ${bm25.docCount} documents but the document table holds ${documents.length}.`);
   if (embeddings.docCount !== documents.length) throw new SearchIndexError(`Embedding matrix covers ${embeddings.docCount} documents but the document table holds ${documents.length}.`);
+  if (manifest.corpusSha256 !== corpusSha256) throw new SearchIndexError("The manifest records a different corpus than the document table contains. Rebuild the index.");
+  if (bm25.corpusSha256 !== corpusSha256) throw new SearchIndexError("The BM25 index was built from a different corpus than the document table contains. Rebuild the index.");
+  if (embeddings.corpusSha256 !== corpusSha256) throw new SearchIndexError("The embedding matrix was built from a different corpus than the document table contains. Rebuild the index.");
   if (embeddings.dimensions !== manifest.embedding.dimensions) throw new SearchIndexError(`Embedding matrix has ${embeddings.dimensions} dimensions but the manifest records ${manifest.embedding.dimensions}.`);
   if (embeddings.model !== manifest.embedding.model) throw new SearchIndexError(`Embedding matrix was built with ${embeddings.model} but the manifest records ${manifest.embedding.model}.`);
+  if (bm25.tokenizer !== manifest.tokenizerVersion) throw new SearchIndexError(`BM25 index was built with tokenizer ${bm25.tokenizer} but the manifest records ${manifest.tokenizerVersion}.`);
+  if (bm25.config.k1 !== manifest.bm25.k1 || bm25.config.b !== manifest.bm25.b || bm25.config.foldSuffixes !== manifest.bm25.foldSuffixes) throw new SearchIndexError("The BM25 index was built with different parameters than the manifest records. Rebuild the index.");
   return { manifest, documents, bm25, embeddings };
 }

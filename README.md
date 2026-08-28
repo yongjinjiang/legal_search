@@ -230,11 +230,13 @@ explicit button, so a legal query reaches an LLM only when a visitor asks it to.
 3. Add the variables above in Project Settings → Environment Variables.
 4. Deploy, verify `/api/health`, run all three retrieval modes, and test the guide.
 
-`/api/health` reports the backend, whether the index loaded, whether embedding and chat
-credentials are present, and the row count, embedding model, and build time of the index that
-actually shipped. It returns 503 if the artifacts are missing, so a deployment that cannot serve
-search fails the check rather than reporting `ok`. It parses only the small manifest, so polling
-it is cheap.
+`/api/health` loads and cross-validates the complete artifact set — not the manifest alone — and
+reports the backend, whether the index is usable, whether embedding and chat credentials are
+present, and the row count, embedding model, and build time of the index that actually shipped.
+Any artifact that is missing, malformed, or built from a different corpus produces 503 and an
+`indexError` naming the fault, so a deployment that cannot serve search fails the check rather
+than reporting `ok`. The load is cached per warm instance, so polling costs one parse per
+instance rather than one per request.
 
 The index artifacts are pulled into the serverless function bundles by
 `outputFileTracingIncludes` in `next.config.ts`, so a function cannot ship without its own corpus.
@@ -283,19 +285,27 @@ application code:
 | Window | 60s |
 | Limit | 20 requests |
 | Counting key | IP address |
-| Action | Log, pending a switch to Deny (429) once real traffic is observed |
+| Action | Deny (403) |
 
 The rule runs at the edge, so a rejected request never invokes a function and never reaches a
 paid API — an in-process limiter would already have paid for the invocation, and would not share
 counters across serverless instances. Static pages are unaffected because only `/api/` paths
 match.
 
-Two limits are worth recording. Counters are tracked per region, so traffic arriving in several
-regions can exceed the configured limit in aggregate. And the Hobby plan allows one rate-limit
-rule per project, so search, chat, and summarize share a single policy despite their costs
-differing by three orders of magnitude; separate policies would need a plan that permits more
-rules. Full-text search, which is free, is throttled by the same rule as summarization, which is
-not.
+Vercel's deny action answers 403 with an HTML body rather than this application's JSON error
+shape, so the browser client checks the response status before parsing. Parsing first would make
+`response.json()` throw and render the parser's own message ("Unexpected token '<'…") to the
+visitor in place of the error; denied requests now surface as *"Too many requests. Please wait a
+moment and try again."*
+
+Three limits are worth recording. Counters are tracked per region, so traffic arriving in several
+regions can exceed the configured limit in aggregate. The Hobby plan allows one rate-limit rule
+per project, so search, chat, and summarize share a single policy despite their costs differing
+by three orders of magnitude; full-text search, which is free, is throttled by the same rule as
+summarization, which is not. And the limit bounds exposure without making it small: a single IP
+staying just inside 20 requests/minute against `/api/summarize` is roughly $144/day. A hard spend
+cap on the provider account is the only control that survives the per-region gap, and is the more
+important of the two.
 
 ## Repository structure
 

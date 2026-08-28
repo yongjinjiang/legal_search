@@ -104,3 +104,50 @@ describe.sequential("local retrieval", () => {
     expect(cases.filter((result) => result.caseId === "long_case")).toHaveLength(1);
   });
 });
+
+describe.sequential("embedding provider contract", () => {
+  const rows = (data: Array<{ index?: unknown; embedding: number[] }>) => new Response(JSON.stringify({ data }), { status: 200 });
+  const vec = () => [1, 0, 0, 0];
+
+  /** The provider sorts by `index`, but sorting alone does not establish alignment: absent
+   *  indices all collapse to the same key and duplicates pass silently. A compatible gateway
+   *  behind OPENAI_BASE_URL is exactly where that would surface. */
+  it.each([
+    ["absent indices", [{ embedding: vec() }, { embedding: vec() }]],
+    ["duplicate indices", [{ index: 0, embedding: vec() }, { index: 0, embedding: vec() }]],
+    ["out-of-range indices", [{ index: 0, embedding: vec() }, { index: 7, embedding: vec() }]],
+    ["negative indices", [{ index: -1, embedding: vec() }, { index: 1, embedding: vec() }]],
+    ["non-integer indices", [{ index: 0.5, embedding: vec() }, { index: 1, embedding: vec() }]],
+  ])("refuses a response whose rows do not map one-to-one onto the inputs: %s", async (_label, data) => {
+    configureEmbeddings();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(rows(data as Array<{ embedding: number[] }>)));
+    const provider = (await import("../src/lib/embeddings/openai")).embeddingProvider()!;
+    await expect(provider.embedDocuments(["a", "b"])).rejects.toThrow(/one-to-one/);
+  });
+
+  it("accepts a valid permutation and restores input order", async () => {
+    configureEmbeddings();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(rows([{ index: 1, embedding: [0, 1, 0, 0] }, { index: 0, embedding: [1, 0, 0, 0] }])));
+    const provider = (await import("../src/lib/embeddings/openai")).embeddingProvider()!;
+    await expect(provider.embedDocuments(["first", "second"])).resolves.toEqual([[1, 0, 0, 0], [0, 1, 0, 0]]);
+  });
+
+  it("rejects an explicitly invalid dimension rather than silently substituting the default", async () => {
+    // A typo used to fall back to 1024, hiding the mistake and making /api/health report a width
+    // the operator never configured.
+    process.env.OPENAI_API_KEY = "test-key";
+    process.env.OPENAI_EMBEDDING_DIMENSIONS = "1024x";
+    const { embeddingProvider } = await import("../src/lib/embeddings/openai");
+    expect(() => embeddingProvider()).toThrow(/positive integer/);
+    process.env.OPENAI_EMBEDDING_DIMENSIONS = "-8";
+    expect(() => embeddingProvider()).toThrow(/positive integer/);
+    delete process.env.OPENAI_EMBEDDING_DIMENSIONS;
+    expect(embeddingProvider()?.dimensions).toBe(1024);
+  });
+
+  it("surfaces a bad dimension configuration as a retrieval error, not a crash", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    process.env.OPENAI_EMBEDDING_DIMENSIONS = "1024x";
+    await expect(localSearchChunks("adverse action", "ANN", 10, index)).rejects.toMatchObject({ status: 503 });
+  });
+});

@@ -14,6 +14,8 @@ export const DEFAULT_BM25_CONFIG: Bm25Config = { k1: BM25_K1, b: BM25_B, foldSuf
 export type Bm25Index = {
   version: number;
   tokenizer: string;
+  /** Digest of the corpus these postings were derived from; cross-checked at load. */
+  corpusSha256: string;
   config: Bm25Config;
   docCount: number;
   avgDocLength: number;
@@ -25,7 +27,7 @@ export type ScoredDoc = { index: number; score: number };
 
 export class SearchIndexError extends Error {}
 
-export function buildBm25Index(documents: string[], config: Bm25Config = DEFAULT_BM25_CONFIG): Bm25Index {
+export function buildBm25Index(documents: string[], config: Bm25Config = DEFAULT_BM25_CONFIG, corpusSha256 = ""): Bm25Index {
   const options: TokenizerOptions = { foldSuffixes: config.foldSuffixes };
   const postings: Record<string, number[]> = {};
   const docLengths: number[] = [];
@@ -42,6 +44,7 @@ export function buildBm25Index(documents: string[], config: Bm25Config = DEFAULT
   return {
     version: BM25_INDEX_VERSION,
     tokenizer: TOKENIZER_VERSION,
+    corpusSha256,
     config,
     docCount: documents.length,
     avgDocLength: documents.length > 0 ? totalLength / documents.length : 0,

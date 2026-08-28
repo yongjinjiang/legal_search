@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { readError } from "@/lib/errorMessage";
 import type { CaseResult, QueryType, SearchState } from "@/lib/search/types";
 
 const EXAMPLES = [
@@ -52,8 +53,8 @@ export function Explorer() {
   // Follows the selected method rather than the completed search, so the benchmark figures track the toggle.
   const note = EVALUATION_NOTES[method];
   const results = completedSearch?.results ?? [];
-  async function runSearch() { const requestId = ++searchRequestRef.current; const requestedQuery = query.trim(); const requestedMethod = method; setLoading(true); setError(""); setSummary(""); setSummaryError(""); try { const response = await fetch("/api/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: requestedQuery, queryType: requestedMethod, numResults: 20 }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error); if (requestId === searchRequestRef.current) setCompletedSearch({ query: requestedQuery, method: requestedMethod, results: data.results, mock: data.mock }); } catch (e) { if (requestId === searchRequestRef.current) { setError(e instanceof Error ? e.message : "Search failed."); setCompletedSearch(undefined); } } finally { if (requestId === searchRequestRef.current) setLoading(false); } }
-  async function sendChat(seed?: string) { const content = (seed ?? chatInput).trim(); if (!content || chatLoading) return; const next = [...messages, { role: "user" as const, content }]; setMessages(next); setChatInput(""); setChatLoading(true); try { const response = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: content, mode, search: searchState }) }); const data = await response.json(); setMessages([...next, { role: "assistant", content: response.ok ? data.answer : data.error }]); } catch { setMessages([...next, { role: "assistant", content: "The technical guide is temporarily unavailable." }]); } finally { setChatLoading(false); } }
+  async function runSearch() { const requestId = ++searchRequestRef.current; const requestedQuery = query.trim(); const requestedMethod = method; setLoading(true); setError(""); setSummary(""); setSummaryError(""); try { const response = await fetch("/api/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: requestedQuery, queryType: requestedMethod, numResults: 20 }) }); if (!response.ok) throw new Error(await readError(response, "Search could not be completed.")); const data = await response.json(); if (requestId === searchRequestRef.current) setCompletedSearch({ query: requestedQuery, method: requestedMethod, results: data.results, mock: data.mock }); } catch (e) { if (requestId === searchRequestRef.current) { setError(e instanceof Error ? e.message : "Search failed."); setCompletedSearch(undefined); } } finally { if (requestId === searchRequestRef.current) setLoading(false); } }
+  async function sendChat(seed?: string) { const content = (seed ?? chatInput).trim(); if (!content || chatLoading) return; const next = [...messages, { role: "user" as const, content }]; setMessages(next); setChatInput(""); setChatLoading(true); try { const response = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: content, mode, search: searchState }) }); const answer = response.ok ? (await response.json()).answer as string : await readError(response, "The technical guide is temporarily unavailable."); setMessages([...next, { role: "assistant", content: answer }]); } catch { setMessages([...next, { role: "assistant", content: "The technical guide is temporarily unavailable." }]); } finally { setChatLoading(false); } }
   // Retrieval never calls a language model. This runs only from the button below the results,
   // which is what keeps an ordinary search free of generation cost.
   async function generateSummary() {
@@ -61,9 +62,8 @@ export function Explorer() {
     setSummaryLoading(true); setSummaryError(""); setSummary("");
     try {
       const response = await fetch("/api/summarize", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: completedSearch.query, queryType: completedSearch.method }) });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
-      setSummary(data.summary);
+      if (!response.ok) throw new Error(await readError(response, "The research summary could not be generated."));
+      setSummary((await response.json()).summary as string);
     } catch (e) { setSummaryError(e instanceof Error ? e.message : "The research summary could not be generated."); } finally { setSummaryLoading(false); }
   }
   function togglePassage(caseId: string) { setExpanded((current) => { const next = new Set(current); if (!next.delete(caseId)) next.add(caseId); return next; }); }

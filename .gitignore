@@ -15,3 +15,4 @@ data/chunks/*.parquet
 data/chunks/*.csv
 .vercel
 .env*
+.agents_context/

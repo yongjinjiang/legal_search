@@ -3,7 +3,7 @@ import { rankScores, SearchIndexError, type ScoredDoc } from "./bm25";
 /** Corpus vectors held as one contiguous Float32Array: 234 × 512 floats is 479 KB, so a linear
  *  scan is a sub-millisecond loop and no vector database is warranted. Row `i` of the matrix
  *  corresponds to document `i` in the same order as the BM25 index and the document table. */
-export type EmbeddingMatrix = { data: Float32Array; docCount: number; dimensions: number; model: string };
+export type EmbeddingMatrix = { data: Float32Array; docCount: number; dimensions: number; model: string; corpusSha256: string };
 
 export function l2Normalize(vector: number[]): Float32Array {
   const normalized = new Float32Array(vector.length);
