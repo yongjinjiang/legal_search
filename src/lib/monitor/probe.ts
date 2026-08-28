@@ -9,6 +9,7 @@ export const PROBE_RESULTS = 3;
 export type ProbeResult = { method: QueryType; ok: boolean; cases: number; ms: number; status?: number; error?: string };
 
 // Lives outside the route module because Next restricts which names a route file may export.
+// FULL_TEXT costs nothing; ANN and HYBRID each make one embedding request per invocation.
 export async function probe(method: QueryType): Promise<ProbeResult> {
   const started = Date.now();
   try {
@@ -16,8 +17,8 @@ export async function probe(method: QueryType): Promise<ProbeResult> {
     const ms = Date.now() - started;
     return results.length > 0 ? { method, ok: true, cases: results.length, ms } : { method, ok: false, cases: 0, ms, error: "Search succeeded but returned no cases." };
   } catch (error) {
-    // SearchServiceError messages are the sanitized public strings; the Databricks error_code
-    // is already logged separately by the search adapter.
+    // SearchServiceError messages are the sanitized public strings; provider status codes are
+    // already logged separately by the embedding and search adapters.
     return { method, ok: false, cases: 0, ms: Date.now() - started, status: error instanceof SearchServiceError ? error.status : undefined, error: error instanceof Error ? error.message : "Unknown search failure." };
   }
 }

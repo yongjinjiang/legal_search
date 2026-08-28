@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { assembleIndex, parseBm25Artifact, parseDocumentTable, parseEmbeddingArtifact, parseManifest, type LocalSearchIndex } from "./artifacts";
+import { assembleIndex, parseBm25Artifact, parseDocumentTable, parseEmbeddingArtifact, parseManifest, type IndexManifest, type LocalSearchIndex } from "./artifacts";
 import { SearchIndexError } from "./bm25";
 
 export const INDEX_DIR = path.join(process.cwd(), "data", "search");
@@ -54,3 +54,13 @@ export function loadLocalIndex(): Promise<LocalSearchIndex> {
 }
 
 export function resetLocalIndexCache(): void { cached = undefined; }
+
+/** Cheap readiness check for /api/health: parses only the small manifest, never the 2.7 MB of
+ *  artifacts, so a health poll costs one file read rather than a full index load. */
+export async function readIndexManifest(): Promise<IndexManifest | undefined> {
+  try {
+    return parseManifest(await readArtifact(ARTIFACT_FILES.manifest, INDEX_DIR));
+  } catch {
+    return undefined;
+  }
+}

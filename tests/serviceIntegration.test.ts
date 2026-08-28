@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { GET as health } from "../src/app/api/health/route";
 import { POST as search } from "../src/app/api/search/route";
 import { loadProjectContext } from "../src/lib/chat/contextLoader";
-import { answerProjectQuestion } from "../src/lib/databricks/chat";
+import { answerProjectQuestion } from "../src/lib/chat/guide";
 import { mockSearch } from "../src/lib/search/mockSearch";
 
 const originalEnv = { ...process.env };
