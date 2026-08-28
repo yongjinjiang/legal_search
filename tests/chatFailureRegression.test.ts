@@ -31,9 +31,7 @@ describe("chat API failure regression", () => {
   });
 
   it("does not expose document read errors or server paths", async () => {
-    process.env.DATABRICKS_HOST = "https://workspace.example";
-    process.env.DATABRICKS_TOKEN = "secret";
-    process.env.DATABRICKS_CHAT_MODEL = "guide";
+    process.env.OPENAI_API_KEY = "test-key";
     const response = await POST(new Request("http://localhost/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

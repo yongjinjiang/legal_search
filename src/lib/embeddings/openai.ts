@@ -54,7 +54,9 @@ export function createOpenAIEmbeddingProvider(settings: OpenAIEmbeddingSettings)
         : response.status === 429
           ? "Semantic search is temporarily rate limited. Full text search is unaffected."
           : "The embedding service is temporarily unavailable.";
-      throw new EmbeddingServiceError(response.status === 429 ? 429 : 502, message);
+      // Rejected credentials are the same class of operator problem as a missing key, so they
+      // report 503 rather than 502; a visitor cannot fix either by retrying.
+      throw new EmbeddingServiceError(response.status === 429 ? 429 : response.status === 401 || response.status === 403 ? 503 : 502, message);
     }
     const payload = await response.json() as EmbeddingResponse;
     const rows = payload.data;
