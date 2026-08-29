@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "NEXT_TEST_WASM=1 NEXT_TEST_WASM_DIR=$PWD/node_modules/@next/swc-wasm-nodejs next dev",
-    "build": "NEXT_TEST_WASM=1 NEXT_TEST_WASM_DIR=$PWD/node_modules/@next/swc-wasm-nodejs next build",
+    "dev": "next dev",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -16,19 +16,17 @@
     "@fontsource/dm-mono": "^5.2.6",
     "@fontsource/source-sans-3": "^5.2.7",
     "@fontsource/source-serif-4": "^5.2.7",
-    "next": "^15.5.2",
+    "next": "^16.3.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "zod": "^4.1.5"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.1",
-    "@next/swc-wasm-nodejs": "^15.5.23",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.2",
     "eslint": "^9.17.0",
-    "eslint-config-next": "^15.5.2",
+    "eslint-config-next": "^16.3.3",
     "typescript": "^5.7.2",
     "vite-node": "^3.2.4",
     "vitest": "^3.2.4"
