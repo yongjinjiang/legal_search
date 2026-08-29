@@ -116,7 +116,7 @@ costs well under a cent.
 
 ## Technical stack
 
-Next.js App Router, React, TypeScript, server route handlers, OpenAI embeddings and chat
+Next.js 16 App Router, React 19, TypeScript, server route handlers, OpenAI embeddings and chat
 completions behind small provider interfaces, Python, PyMuPDF, PyArrow, and Vitest. Phase 1's
 Databricks AI Search, Databricks Model Serving, and Delta Lake/Unity Catalog components are no
 longer required to run the application.
@@ -133,10 +133,12 @@ Full-text search works immediately with no API key, because the index artifacts 
 Semantic and hybrid search additionally need `OPENAI_API_KEY`. For credential-free frontend work,
 set `MOCK_SEARCH=true`; mock results are labelled inline so they cannot be mistaken for real ones.
 
-The `dev` and `build` scripts deliberately use Next's WASM SWC package. On this Dropbox-hosted
-macOS workspace the native SWC binary fails code-signature validation; removing the fallback makes
-`next build` fail. Re-test the native compiler before removing these environment flags on a
-different filesystem or build host.
+Earlier versions of this project pinned the `dev` and `build` scripts to Next's WASM SWC package,
+because on this Dropbox-hosted macOS workspace the native SWC binary failed code-signature
+validation. That note asked for the native compiler to be re-tested before the workaround was
+removed. It was, on the upgrade to Next 16: the native `@next/swc-darwin-arm64` binary now builds
+cleanly here, so the WASM package and its environment flags are gone and the scripts are plain
+`next dev` and `next build`.
 
 Validation commands:
 
