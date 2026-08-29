@@ -13,8 +13,10 @@ export function openAIChatSettings(): OpenAIChatSettings | undefined {
     apiKey,
     model: process.env.OPENAI_CHAT_MODEL || DEFAULT_CHAT_MODEL,
     baseUrl: process.env.OPENAI_BASE_URL,
-    // Low keeps latency and billed reasoning tokens down. Both callers ground the model in
-    // supplied text rather than asking it to solve anything.
+    // Low, by measurement rather than by default. On this project's summary prompt "minimal"
+    // produced roughly a fifth of the page-range citations, and "medium" ran 50-66s and could
+    // spend the whole output budget on reasoning tokens, returning nothing. Both callers ground
+    // the model in supplied text rather than asking it to solve anything.
     reasoningEffort: process.env.OPENAI_REASONING_EFFORT || "low",
   };
 }
