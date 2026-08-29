@@ -150,6 +150,35 @@ npm run build
 make validate
 ```
 
+### Live provider check
+
+The commands above are hermetic — they make no network calls, which is right for CI and is also
+their limit. They can prove that an empty completion is rejected safely; they cannot prove that
+the configured model, prompt, reasoning effort, and token budget avoid producing one. Two defects
+reached production through exactly that gap: an output budget consumed entirely by reasoning
+tokens, and an embedding batch larger than the account's per-request ceiling. Both passed a full
+green gate.
+
+```bash
+npm run verify:provider -- --live
+```
+
+An opt-in release check, deliberately not part of `npm test`. It refuses to run without `--live`
+because it makes billed API calls, and prints the call count before starting. It exercises the
+real assembled prompts and the exact configured profile: one query embedding checked for width,
+finiteness, and latency, then three summary and three guide completions checked for non-empty
+output, a finish reason that is not `length`, usage inside the configured cap, and latency inside
+the route's remaining budget. Summaries are additionally checked structurally — that they name a
+supplied case and cite a supplied page range — never on wording or an exact citation count.
+
+`--report <path>` writes a machine-readable result recording the resolved model, effort, limits,
+latency, finish reasons, and token accounting, plus a hash of the prompt rather than its text.
+
+This is a stochastic compatibility smoke test, not a quality evaluation. Run it when the model,
+provider, base URL, reasoning effort, prompts, context budgets, token or time limits, embedding
+batch size or dimensions, or the provider account tier change. For ordinary UI and refactor work
+the hermetic gate is sufficient.
+
 ### Rebuilding the search index
 
 The four artifacts in `data/search/` are committed, so this is only needed when the corpus,

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { generateLegalSummary, SummaryServiceError } from "@/lib/chat/summary";
 import { summaryRequestSchema } from "@/lib/chat/validation";
+import { deadlineIn } from "@/lib/deadline";
+import { LLM_ROUTE_BUDGET_MS } from "@/lib/limits";
 import { searchCases, SearchServiceError } from "@/lib/search/backend";
 
 // Deliberately a separate endpoint from /api/search. Retrieval stays pure and free; this route
@@ -16,8 +18,12 @@ export async function POST(request: Request) {
   try {
     // Retrieval is repeated server-side so the summary is grounded in corpus text rather than in
     // passages a caller could have edited before posting them back.
-    const { results } = await searchCases(body.data.query, body.data.queryType);
-    const summary = await generateLegalSummary(body.data.query, results);
+    // One allowance for the whole request. Retrieval and generation run in sequence, so their
+    // independent caps would otherwise sum to the entire platform budget and leave nothing to
+    // return an error with.
+    const deadlineAt = deadlineIn(LLM_ROUTE_BUDGET_MS);
+    const { results } = await searchCases(body.data.query, body.data.queryType, undefined, deadlineAt);
+    const summary = await generateLegalSummary(body.data.query, results, deadlineAt);
     return NextResponse.json({ summary, cases: results.map((result) => ({ caseName: result.caseName, citation: result.citation })) });
   } catch (error) {
     if (error instanceof SearchServiceError || error instanceof SummaryServiceError) return NextResponse.json({ error: error.message }, { status: error.status });

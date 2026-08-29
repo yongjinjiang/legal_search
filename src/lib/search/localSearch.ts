@@ -1,3 +1,5 @@
+import { budgetFor, DeadlineExceededError } from "@/lib/deadline";
+import { EMBEDDING_TIMEOUT_MS } from "@/lib/limits";
 import { embeddingProvider } from "@/lib/embeddings/openai";
 import { EmbeddingServiceError } from "@/lib/embeddings/provider";
 import { RRF_CANDIDATE_DEPTH, RRF_K, reciprocalRankFusion } from "./hybridSearch";
@@ -14,7 +16,7 @@ function toChunks(index: LocalSearchIndex, ranked: Array<{ index: number; score:
   return ranked.map((entry, position) => ({ ...index.documents[entry.index], rank: position + 1, score: entry.score }));
 }
 
-async function embedQuery(query: string, index: LocalSearchIndex): Promise<number[]> {
+async function embedQuery(query: string, index: LocalSearchIndex, deadlineAt?: number): Promise<number[]> {
   let provider;
   // An invalid OPENAI_EMBEDDING_DIMENSIONS is now a thrown configuration error rather than a
   // silent fallback, so it has to reach the caller as a public-safe retrieval error.
@@ -30,8 +32,9 @@ async function embedQuery(query: string, index: LocalSearchIndex): Promise<numbe
     throw new SearchServiceError(503, "Semantic search is misconfigured: the query embedding model does not match the built index.");
   }
   try {
-    return await provider.embedQuery(query);
+    return await provider.embedQuery(query, budgetFor(EMBEDDING_TIMEOUT_MS, deadlineAt));
   } catch (error) {
+    if (error instanceof DeadlineExceededError) throw new SearchServiceError(504, "The request ran out of time before semantic search could start.");
     if (error instanceof EmbeddingServiceError) throw new SearchServiceError(error.status, error.message);
     throw new SearchServiceError(502, "Unable to reach the embedding service.");
   }
@@ -44,7 +47,7 @@ async function embedQuery(query: string, index: LocalSearchIndex): Promise<numbe
  * the query; the corpus vectors were embedded once, offline. Nothing here contacts a search
  * service, so an idle deployment makes no paid calls at all.
  */
-export async function localSearchChunks(query: string, queryType: QueryType, numResults: number, preloaded?: LocalSearchIndex): Promise<SearchChunk[]> {
+export async function localSearchChunks(query: string, queryType: QueryType, numResults: number, preloaded?: LocalSearchIndex, deadlineAt?: number): Promise<SearchChunk[]> {
   // `preloaded` exists for the offline benchmark, which scores alternate indexes through this
   // exact function rather than through a parallel implementation that could drift from it.
   let index: LocalSearchIndex;
@@ -57,7 +60,7 @@ export async function localSearchChunks(query: string, queryType: QueryType, num
 
   if (queryType === "FULL_TEXT") return toChunks(index, searchBm25(index.bm25, query, numResults));
 
-  const semantic: ScoredDoc[] = searchEmbeddings(index.embeddings, await embedQuery(query, index), queryType === "ANN" ? numResults : RRF_CANDIDATE_DEPTH);
+  const semantic: ScoredDoc[] = searchEmbeddings(index.embeddings, await embedQuery(query, index, deadlineAt), queryType === "ANN" ? numResults : RRF_CANDIDATE_DEPTH);
   if (queryType === "ANN") return toChunks(index, semantic);
 
   const lexical = searchBm25(index.bm25, query, RRF_CANDIDATE_DEPTH);

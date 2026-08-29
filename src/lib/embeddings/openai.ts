@@ -40,6 +40,7 @@ export function createOpenAIEmbeddingProvider(settings: OpenAIEmbeddingSettings)
   const url = `${(settings.baseUrl || DEFAULT_BASE_URL).replace(/\/$/, "")}/embeddings`;
 
   async function embed(inputs: string[], timeoutMs: number): Promise<number[][]> {
+    const startedAt = Date.now();
     let response: Response;
     try {
       response = await fetchWithTimeout(url, {
@@ -67,7 +68,8 @@ export function createOpenAIEmbeddingProvider(settings: OpenAIEmbeddingSettings)
       const authFailure = response.status === 401 || response.status === 403;
       throw new EmbeddingServiceError(response.status === 429 ? 429 : authFailure ? 503 : 502, message, !authFailure);
     }
-    const payload = await response.json() as EmbeddingResponse;
+    const payload = await response.json() as EmbeddingResponse & { usage?: { prompt_tokens?: number } };
+    console.log("[embeddings] ok", { provider: "openai", model: settings.model, dimensions: settings.dimensions, inputs: inputs.length, promptTokens: payload.usage?.prompt_tokens, ms: Date.now() - startedAt });
     const rows = payload.data;
     if (!Array.isArray(rows) || rows.length !== inputs.length) throw new EmbeddingServiceError(502, "The embedding service returned an unexpected response.");
     // The API documents index-ordered results but does not guarantee it, and OPENAI_BASE_URL
@@ -96,7 +98,7 @@ export function createOpenAIEmbeddingProvider(settings: OpenAIEmbeddingSettings)
     name: "openai",
     model: settings.model,
     dimensions: settings.dimensions,
-    async embedQuery(text: string) { return (await embed([text], EMBEDDING_TIMEOUT_MS))[0]; },
+    async embedQuery(text: string, timeoutMs?: number) { return (await embed([text], timeoutMs ?? EMBEDDING_TIMEOUT_MS))[0]; },
     async embedDocuments(texts: string[]) {
       const batchSize = settings.batchSize && settings.batchSize > 0 ? settings.batchSize : EMBEDDING_BATCH_SIZE;
       const vectors: number[][] = [];

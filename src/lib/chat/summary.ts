@@ -1,3 +1,4 @@
+import { budgetFor, DeadlineExceededError } from "@/lib/deadline";
 import { MAX_SUMMARY_OUTPUT_TOKENS, SUMMARY_MAX_CASES, SUMMARY_MAX_PASSAGES, SUMMARY_PASSAGE_CHARS, SUMMARY_TIMEOUT_MS } from "@/lib/limits";
 import { llmProvider } from "@/lib/llm/openai";
 import { LlmServiceError } from "@/lib/llm/provider";
@@ -7,7 +8,9 @@ export class SummaryServiceError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 
-const SYSTEM = [
+// Exported so the live provider check can exercise the exact prompt production sends. A
+// paraphrase would let the check pass while the deployed profile behaves differently.
+export const SUMMARY_SYSTEM_PROMPT = [
   "You summarise retrieved U.S. Supreme Court opinion passages for a legal researcher.",
   "Use only the passages supplied below. Do not rely on outside knowledge of these cases, and do not introduce cases that are not in the passages.",
   "Name each case you rely on and cite its page range exactly as given.",
@@ -46,13 +49,14 @@ export function buildSummaryPrompt(question: string, results: CaseResult[]): str
  * Never called by search. The route behind it runs only when a visitor clicks the action, which
  * is what keeps ordinary retrieval free of LLM cost.
  */
-export async function generateLegalSummary(question: string, results: CaseResult[]): Promise<string> {
+export async function generateLegalSummary(question: string, results: CaseResult[], deadlineAt?: number): Promise<string> {
   const provider = llmProvider();
   if (!provider) throw new SummaryServiceError(503, "Research summaries are not configured on this deployment. Search results remain available.");
   if (results.length === 0) throw new SummaryServiceError(400, "There are no retrieved passages to summarise.");
   try {
-    return await provider.complete([{ role: "system", content: SYSTEM }, { role: "user", content: buildSummaryPrompt(question, results) }], { maxOutputTokens: MAX_SUMMARY_OUTPUT_TOKENS, timeoutMs: SUMMARY_TIMEOUT_MS });
+    return await provider.complete([{ role: "system", content: SUMMARY_SYSTEM_PROMPT }, { role: "user", content: buildSummaryPrompt(question, results) }], { maxOutputTokens: MAX_SUMMARY_OUTPUT_TOKENS, timeoutMs: budgetFor(SUMMARY_TIMEOUT_MS, deadlineAt) });
   } catch (error) {
+    if (error instanceof DeadlineExceededError) throw new SummaryServiceError(504, "The request ran out of time before a summary could be generated.");
     if (error instanceof LlmServiceError) throw new SummaryServiceError(error.status === 429 ? 429 : 503, error.status === 429 ? "The summary service is busy. Try again shortly." : "The summary service is temporarily unavailable.");
     throw error;
   }

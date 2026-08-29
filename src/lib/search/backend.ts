@@ -20,10 +20,10 @@ export function mockEnabled(): boolean {
   return process.env.MOCK_SEARCH === "true" || process.env.MOCK_DATABRICKS === "true";
 }
 
-async function retrieveChunks(query: string, queryType: QueryType, numResults: number, backend: SearchBackend): Promise<SearchChunk[]> {
+async function retrieveChunks(query: string, queryType: QueryType, numResults: number, backend: SearchBackend, deadlineAt?: number): Promise<SearchChunk[]> {
   if (mockEnabled()) return (await import("./mockSearch")).mockSearch(query, queryType, numResults);
   if (backend === "databricks") return (await import("@/lib/databricks/search")).databricksSearchChunks(query, queryType, numResults);
-  return localSearchChunks(query, queryType, numResults);
+  return localSearchChunks(query, queryType, numResults, undefined, deadlineAt);
 }
 
 /**
@@ -33,9 +33,9 @@ async function retrieveChunks(query: string, queryType: QueryType, numResults: n
  * must never answer a failed semantic search with mock data or with a different retrieval method
  * while still labelling the result ANN or HYBRID.
  */
-export async function searchCases(query: string, queryType: QueryType, numResults = DEFAULT_CHUNK_RESULTS): Promise<{ results: CaseResult[]; mock: boolean; backend: SearchBackend }> {
+export async function searchCases(query: string, queryType: QueryType, numResults = DEFAULT_CHUNK_RESULTS, deadlineAt?: number): Promise<{ results: CaseResult[]; mock: boolean; backend: SearchBackend }> {
   const backend = searchBackend();
-  const chunks = await retrieveChunks(query, queryType, numResults, backend);
+  const chunks = await retrieveChunks(query, queryType, numResults, backend, deadlineAt);
   return { results: collapseToCases(chunks, queryType, MAX_CASE_RESULTS), mock: mockEnabled(), backend };
 }
 

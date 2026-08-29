@@ -13,7 +13,8 @@ export interface EmbeddingProvider {
   readonly name: string;
   readonly model: string;
   readonly dimensions: number;
-  embedQuery(text: string): Promise<number[]>;
+  /** `timeoutMs` lets a route cap this call by whatever remains of its own budget. */
+  embedQuery(text: string, timeoutMs?: number): Promise<number[]>;
   /** Offline index building. Runtime never calls this. */
   embedDocuments(texts: string[]): Promise<number[][]>;
 }
