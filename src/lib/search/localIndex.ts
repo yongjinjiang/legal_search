@@ -1,31 +1,15 @@
-import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { assembleIndex, parseBm25Artifact, parseDocumentTable, parseEmbeddingArtifact, parseManifest, type LocalSearchIndex } from "./artifacts";
+import { assembleIndex, corpusDigest, parseBm25Artifact, parseDocumentTable, parseEmbeddingArtifact, parseManifest, type LocalSearchIndex } from "./artifacts";
 import { SearchIndexError } from "./bm25";
+
+export { corpusDigest } from "./artifacts";
 
 /** Resolved per call rather than captured at module load. A path frozen at import time silently
  *  ignores any later change of working directory, which made the loader untestable and would
  *  mask a genuine cwd difference between build and runtime. */
 export function indexDir(): string { return path.join(process.cwd(), "data", "search"); }
 export const ARTIFACT_FILES = { manifest: "index_manifest.json", documents: "documents.json", bm25: "bm25_index.json", embeddings: "embeddings.json" } as const;
-
-/** Stable fingerprint of the corpus: its order *and* its content.
- *
- *  The artifacts are positional — row `i` of the embedding matrix is document `i` — so every
- *  file has to agree on which corpus it was built from. Hashing chunk IDs alone is not enough:
- *  editing `chunk_text` while keeping `chunk_id` leaves an ID-only digest unchanged, which is
- *  exactly how stale vectors get reused for rewritten passages.
- *
- *  Fields are length-prefixed rather than joined by a delimiter, so no chunk ID or passage can
- *  contain a separator that shifts a field boundary and forges a matching digest. */
-export function corpusDigest(documents: Array<{ chunkId: string; chunkText: string }>): string {
-  const hash = createHash("sha256");
-  for (const document of documents) {
-    for (const field of [document.chunkId, document.chunkText]) hash.update(`${Buffer.byteLength(field, "utf8")}:${field}`);
-  }
-  return hash.digest("hex");
-}
 
 async function readArtifact(file: string, dir: string): Promise<unknown> {
   let contents: string;

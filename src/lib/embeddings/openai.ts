@@ -112,7 +112,7 @@ export function createOpenAIEmbeddingProvider(settings: OpenAIEmbeddingSettings)
           } catch (error) {
             if (!(error instanceof EmbeddingServiceError && error.retryable) || attempt >= EMBEDDING_BUILD_RETRY_DELAYS_MS.length) throw error;
             const delay = EMBEDDING_BUILD_RETRY_DELAYS_MS[attempt];
-            console.warn(`[embeddings] batch ${Math.floor(start / batchSize) + 1} was rate limited; retrying in ${delay / 1000}s`);
+            console.warn(`[embeddings] batch ${Math.floor(start / batchSize) + 1} failed with a retryable provider error (status ${(error as EmbeddingServiceError).status}); retrying in ${delay / 1000}s`);
             await new Promise((resolve) => setTimeout(resolve, delay));
           }
         }

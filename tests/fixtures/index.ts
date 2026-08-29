@@ -4,6 +4,7 @@ import { corpusDigest } from "../../src/lib/search/localIndex";
 import { l2Normalize, type EmbeddingMatrix } from "../../src/lib/search/semanticSearch";
 
 export const FIXTURE_MODEL = "fixture-embed";
+export const FIXTURE_PROVIDER = "fixture";
 export const FIXTURE_DIMENSIONS = 4;
 
 /** Four chunks across three cases, one of which owns two. Small enough to reason about by hand
@@ -29,14 +30,14 @@ export const fixtureDigest = () => corpusDigest(fixtureDocuments);
 export function fixtureMatrix(): EmbeddingMatrix {
   const data = new Float32Array(fixtureDocuments.length * FIXTURE_DIMENSIONS);
   RAW_VECTORS.forEach((vector, row) => data.set(l2Normalize(vector), row * FIXTURE_DIMENSIONS));
-  return { data, docCount: fixtureDocuments.length, dimensions: FIXTURE_DIMENSIONS, model: FIXTURE_MODEL, corpusSha256: fixtureDigest() };
+  return { data, docCount: fixtureDocuments.length, dimensions: FIXTURE_DIMENSIONS, model: FIXTURE_MODEL, provider: FIXTURE_PROVIDER, corpusSha256: fixtureDigest() };
 }
 
 export function fixtureEmbeddingArtifact(overrides: Record<string, unknown> = {}) {
   const matrix = fixtureMatrix();
   return {
     version: ARTIFACT_VERSION,
-    provider: "fixture",
+    provider: FIXTURE_PROVIDER,
     model: FIXTURE_MODEL,
     dimensions: FIXTURE_DIMENSIONS,
     count: fixtureDocuments.length,
@@ -56,7 +57,7 @@ export function fixtureManifest(overrides: Partial<IndexManifest> = {}): IndexMa
     sourceFile: "tests/fixtures/index.ts",
     sourceSha256: "0".repeat(64),
     corpusSha256: fixtureDigest(),
-    embedding: { provider: "fixture", model: FIXTURE_MODEL, dimensions: FIXTURE_DIMENSIONS },
+    embedding: { provider: FIXTURE_PROVIDER, model: FIXTURE_MODEL, dimensions: FIXTURE_DIMENSIONS },
     bm25: DEFAULT_BM25_CONFIG,
     tokenizerVersion: "legal-en-v1",
     ...overrides,

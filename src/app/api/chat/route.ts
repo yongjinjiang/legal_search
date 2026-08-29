@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { answerProjectQuestion, ChatServiceError } from "@/lib/chat/guide";
 import { chatRequestSchema } from "@/lib/chat/validation";
+
+// A detailed guide answer is a reasoning-model call over the full project documentation and runs
+// well past the platform's default function budget. Declared explicitly so the route is not
+// killed mid-answer by a default it never chose.
+export const maxDuration = 60;
+
 // A malformed body is a client error, so it is parsed outside the service try/catch to keep it a 400 rather than a retryable 503.
 export async function POST(request: Request) {
   let body: unknown; try { body = await request.json(); } catch { return NextResponse.json({ error: "Invalid chat request." }, { status: 400 }); }
