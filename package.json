@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "build:index": "vite-node -c vitest.config.ts scripts/build_search_index.ts --",
-    "benchmark": "vite-node -c vitest.config.ts scripts/evaluate_local_retrieval.ts --"
+    "benchmark": "vite-node -c vitest.config.ts scripts/evaluate_local_retrieval.ts --",
+    "verify:provider": "vite-node -c vitest.config.ts scripts/verify_provider.ts --"
   },
   "dependencies": {
     "@fontsource/dm-mono": "^5.2.6",

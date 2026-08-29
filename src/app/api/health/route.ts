@@ -12,12 +12,17 @@ import { indexReadiness } from "@/lib/search/localIndex";
 export async function GET() {
   const backend = searchBackend();
   const mock = mockEnabled();
-  const chatConfigured = Boolean(llmProvider());
+
   // A malformed embedding configuration is reported as a reason rather than thrown, so an
   // operator sees the specific problem instead of a 500.
   let embeddings = false;
   let embeddingError: string | undefined;
   try { embeddings = Boolean(embeddingProvider()); } catch (error) { embeddingError = error instanceof Error ? error.message : "The embedding configuration is invalid."; }
+  // A rejected reasoning effort is a configuration fault an operator can only fix if it is
+  // reported; otherwise it surfaces as a generic chat outage on the first question asked.
+  let chatConfigured = false;
+  let chatError: string | undefined;
+  try { chatConfigured = Boolean(llmProvider()); } catch (error) { chatError = error instanceof Error ? error.message : "The chat configuration is invalid."; }
 
   if (mock) return NextResponse.json({ status: chatConfigured ? "ok" : "degraded", backend, searchMode: "mock", searchConfigured: true, lexicalConfigured: true, semanticConfigured: true, chatConfigured }, { status: 200 });
 
@@ -47,5 +52,6 @@ export async function GET() {
     // debugging without disclosing anything.
     indexError: readiness.ready ? undefined : readiness.reason,
     embeddingError,
+    chatError,
   }, { status: lexicalConfigured ? 200 : 503 });
 }

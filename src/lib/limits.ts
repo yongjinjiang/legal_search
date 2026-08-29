@@ -22,6 +22,12 @@ export const EMBEDDING_BUILD_RETRY_DELAYS_MS = [2_000, 6_000, 18_000, 45_000];
 
 /** Technical guide. */
 export const MAX_QUESTION_LENGTH = 3000;
+
+/** Wall-clock allowance for one request on an LLM route, shared across its steps. Both routes
+ *  declare maxDuration = 60, so this leaves five seconds for loading the index, building the
+ *  prompt, parsing the provider response, and serialising a reply — work the per-call network
+ *  timeouts never accounted for. */
+export const LLM_ROUTE_BUDGET_MS = 55_000;
 // Both LLM routes declare maxDuration = 60, so the application timeout has to sit below that
 // platform ceiling with room left to serialise an error response. Measured: a detailed guide
 // answer over ~5,900 prompt tokens runs 22-30s on gpt-5-mini, so 30s was on the boundary and

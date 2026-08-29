@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_CHAT_MODEL, createOpenAIChatProvider, isReasoningModel, llmProvider } from "../src/lib/llm/openai";
+import { ALLOW_UNTESTED_EFFORT_ENV, DEFAULT_CHAT_MODEL, SUPPORTED_REASONING_EFFORTS, TESTED_REASONING_EFFORTS, createOpenAIChatProvider, isReasoningModel, llmProvider, resolveReasoningEffort } from "../src/lib/llm/openai";
 import { LlmServiceError } from "../src/lib/llm/provider";
 
 const originalEnv = { ...process.env };
@@ -87,5 +87,44 @@ describe("OpenAI chat provider", () => {
     expect(llmProvider()).toBeUndefined();
     process.env.OPENAI_API_KEY = "test-key";
     expect(llmProvider()?.model).toBe(DEFAULT_CHAT_MODEL);
+  });
+});
+
+describe("reasoning effort configuration", () => {
+  afterEach(() => { process.env = { ...originalEnv }; });
+
+  it("defaults to the measured value when unset", () => {
+    delete process.env.OPENAI_REASONING_EFFORT;
+    expect(resolveReasoningEffort()).toBe("low");
+  });
+
+  it("rejects a value outside the provider's enum", () => {
+    // A typo would otherwise reach the provider as an invalid request at the first question.
+    for (const value of ["lo", "LOW ", "fastest", "1"]) {
+      process.env.OPENAI_REASONING_EFFORT = value;
+      expect(() => resolveReasoningEffort()).toThrow(/must be one of/);
+    }
+  });
+
+  it("refuses efforts measured to break this deployment's budgets", () => {
+    // "medium" ran 50-66s and spent an entire output budget on reasoning, returning nothing.
+    for (const value of ["medium", "high"]) {
+      process.env.OPENAI_REASONING_EFFORT = value;
+      expect(() => resolveReasoningEffort()).toThrow(/not tested against this deployment/);
+    }
+  });
+
+  it("allows an untested effort only behind a deliberate override", () => {
+    process.env.OPENAI_REASONING_EFFORT = "medium";
+    process.env[ALLOW_UNTESTED_EFFORT_ENV] = "true";
+    expect(resolveReasoningEffort()).toBe("medium");
+    expect(TESTED_REASONING_EFFORTS.every((effort) => (SUPPORTED_REASONING_EFFORTS as readonly string[]).includes(effort))).toBe(true);
+  });
+
+  it("accepts every tested value without an override", () => {
+    for (const value of TESTED_REASONING_EFFORTS) {
+      process.env.OPENAI_REASONING_EFFORT = value;
+      expect(resolveReasoningEffort()).toBe(value);
+    }
   });
 });

@@ -6,6 +6,34 @@ const DEFAULT_BASE_URL = "https://api.openai.com/v1";
 
 export type OpenAIChatSettings = { apiKey: string; model: string; baseUrl?: string; reasoningEffort?: string };
 
+// The provider's own enum. Anything outside it is a typo that becomes an invalid request.
+export const SUPPORTED_REASONING_EFFORTS = ["minimal", "low", "medium", "high"] as const;
+// The subset measured against this deployment's prompts and budgets. "medium" ran 50-66s and
+// spent an entire 4,000-token output budget on reasoning, returning nothing; "high" is strictly
+// worse. Those are not merely slower settings — they break the configured routes — so they are
+// refused unless an operator deliberately opts into an untested profile.
+export const TESTED_REASONING_EFFORTS = ["minimal", "low"] as const;
+export const ALLOW_UNTESTED_EFFORT_ENV = "OPENAI_ALLOW_UNTESTED_REASONING_EFFORT";
+
+/** Validate the configured effort instead of forwarding an arbitrary string. Documenting a
+ *  footgun does not remove it: a typo reaches the provider as an invalid request, and a valid
+ *  but untested value fails intermittently in production rather than at startup.
+ *
+ *  Low, by measurement rather than by default: on this project's summary prompt "minimal"
+ *  produced roughly a fifth of the required page-range citations. Both callers ground the model
+ *  in supplied text rather than asking it to solve anything. */
+export function resolveReasoningEffort(): string {
+  const configured = process.env.OPENAI_REASONING_EFFORT?.trim();
+  if (!configured) return "low";
+  if (!(SUPPORTED_REASONING_EFFORTS as readonly string[]).includes(configured)) {
+    throw new LlmServiceError(503, `OPENAI_REASONING_EFFORT must be one of: ${SUPPORTED_REASONING_EFFORTS.join(", ")}.`);
+  }
+  if (!(TESTED_REASONING_EFFORTS as readonly string[]).includes(configured) && process.env[ALLOW_UNTESTED_EFFORT_ENV] !== "true") {
+    throw new LlmServiceError(503, `OPENAI_REASONING_EFFORT "${configured}" is not tested against this deployment's token and time budgets. Set ${ALLOW_UNTESTED_EFFORT_ENV}=true to override.`);
+  }
+  return configured;
+}
+
 export function openAIChatSettings(): OpenAIChatSettings | undefined {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return undefined;
@@ -13,11 +41,7 @@ export function openAIChatSettings(): OpenAIChatSettings | undefined {
     apiKey,
     model: process.env.OPENAI_CHAT_MODEL || DEFAULT_CHAT_MODEL,
     baseUrl: process.env.OPENAI_BASE_URL,
-    // Low, by measurement rather than by default. On this project's summary prompt "minimal"
-    // produced roughly a fifth of the page-range citations, and "medium" ran 50-66s and could
-    // spend the whole output budget on reasoning tokens, returning nothing. Both callers ground
-    // the model in supplied text rather than asking it to solve anything.
-    reasoningEffort: process.env.OPENAI_REASONING_EFFORT || "low",
+    reasoningEffort: resolveReasoningEffort(),
   };
 }
 
@@ -70,15 +94,29 @@ export function createOpenAIChatProvider(settings: OpenAIChatSettings): LlmProvi
         throw new LlmServiceError(502, "The service returned an unreadable response.");
       }
       const answer = payload.choices?.[0]?.message?.content?.trim();
-      // A reasoning model spends this budget on reasoning tokens before emitting any text, so
-      // exhausting it returns a well-formed 200 with empty content. This is a configuration
-      // fault, not an outage: it recurs until the budget is raised. It is logged with the token
-      // accounting because without that the failure is indistinguishable from a transient one.
+      // The same token accounting is recorded either way. On success it makes the next budget
+      // cliff an observable trend instead of a user report; on failure it is what distinguishes a
+      // configuration fault from a transient one. Model and usage only — never prompts,
+      // retrieved text, or credentials.
+      const accounting = {
+        provider: "openai",
+        model: settings.model,
+        effort: settings.reasoningEffort,
+        finishReason: payload.choices?.[0]?.finish_reason,
+        maxOutputTokens: options.maxOutputTokens,
+        promptTokens: payload.usage?.prompt_tokens,
+        completionTokens: payload.usage?.completion_tokens,
+        reasoningTokens: payload.usage?.completion_tokens_details?.reasoning_tokens,
+        ms: Date.now() - started,
+      };
       if (!answer) {
-        const finish = payload.choices?.[0]?.finish_reason;
-        console.error("[llm] empty completion", { provider: "openai", model: settings.model, finishReason: finish, maxOutputTokens: options.maxOutputTokens, promptTokens: payload.usage?.prompt_tokens, completionTokens: payload.usage?.completion_tokens, reasoningTokens: payload.usage?.completion_tokens_details?.reasoning_tokens, ms: Date.now() - started });
-        throw new LlmServiceError(502, finish === "length" ? "The response exceeded its length budget before any text was produced." : "The service returned an empty response.");
+        // A reasoning model spends this budget on reasoning tokens before emitting any text, so
+        // exhausting it returns a well-formed 200 with empty content. That is a configuration
+        // fault, not an outage: it recurs until the budget is raised.
+        console.error("[llm] empty completion", accounting);
+        throw new LlmServiceError(502, accounting.finishReason === "length" ? "The response exceeded its length budget before any text was produced." : "The service returned an empty response.");
       }
+      console.log("[llm] ok", accounting);
       return answer;
     },
   };
