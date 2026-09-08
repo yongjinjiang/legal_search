@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { parseCsv } from "../scripts/lib/csv";
+import { contextFiles } from "../src/lib/chat/contextLoader";
 import { BENCHMARK_QUERIES, EVALUATION_NOTES, LOCAL_BENCHMARK, UNANIMOUS_RANK_ONE } from "../src/lib/evaluation/localBenchmark";
 import { QUERY_TYPES, type QueryType } from "../src/lib/search/types";
 
@@ -79,6 +80,27 @@ describe("displayed benchmark figures match the saved evidence", () => {
     expect(best).toBe("HYBRID");
     // Uniquely highest, so prose describing a tie is wrong.
     expect(QUERY_TYPES.filter((method) => LOCAL_BENCHMARK[method].recall1 === LOCAL_BENCHMARK.HYBRID.recall1)).toEqual(["HYBRID"]);
+  });
+
+  // The prose the chatbot is grounded in has to agree with the page, and one of these files was
+  // missed on the first pass because it wrote the count as "16" where the others wrote "Sixteen".
+  // The corrected README and the long evaluation write-up are swept alongside the four the guide
+  // actually loads, since they are the human-facing copies of the same claim.
+  const GROUNDING_DOCS = [...new Set([...contextFiles("detailed").map((file) => `docs/${file}`), "docs/LOCAL_RETRIEVAL_EVALUATION.md", "README.md"])];
+  const WORDS: Record<string, number> = { fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18 };
+  const countOf = (token: string) => WORDS[token.toLowerCase()] ?? Number(token);
+
+  it.each(GROUNDING_DOCS)("states the unanimous rank-one count correctly in %s", (file) => {
+    const text = readFileSync(path.join(process.cwd(), file), "utf8").replace(/\s+/g, " ");
+    const claims = [
+      ...text.matchAll(/\b([A-Za-z]+|\d+) of (?:the )?(?:those )?(?:eighteen |18 )?queries are (?:answered|solved) at rank one/gi),
+      ...text.matchAll(/of which ([A-Za-z]+|\d+) are (?:answered|solved) at rank one/gi),
+    ].map((match) => countOf(match[1]));
+    for (const claim of claims) expect(claim).toBe(UNANIMOUS_RANK_ONE);
+    // The pattern above can only check claims it recognises, so this also rules out the superseded
+    // number appearing anywhere near the phrase, in either word or digit form.
+    expect(text).not.toMatch(/(sixteen|\b16\b)[^.]{0,90}at rank one/i);
+    expect(text).not.toMatch(/at rank one[^.]{0,90}(sixteen|\b16\b)/i);
   });
 
   it("checks the two claims the notes make about Q17", () => {

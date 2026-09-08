@@ -11,7 +11,7 @@ Beyond that: query expansion, statute/jurisdiction/date filters, metadata-aware 
 citation-graph signals, legal-specific embeddings, and a broader corpus.
 
 Evaluation should move toward expert-created graded relevance judgments and lawyer feedback. The
-current benchmark is 18 author-labelled queries of which 16 are solved at rank one by every
+current benchmark is 18 author-labelled queries of which 15 are solved at rank one by every
 method, so it can no longer distinguish between good retrieval systems. That feedback could
 support active learning, learning-to-rank, preference learning, and eventually carefully evaluated
 reinforcement-learning approaches. Agentic query reformulation and adaptive retrieval may help
