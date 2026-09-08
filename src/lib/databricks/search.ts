@@ -1,6 +1,6 @@
 import { SearchServiceError } from "@/lib/search/errors";
 import type { QueryType, SearchChunk } from "@/lib/search/types";
-import { databricksConnection, fetchWithTimeout } from "@/lib/databricks/client";
+import { databricksConnection, fetchWithTimeout, HttpTimeoutError, isAbortError } from "@/lib/databricks/client";
 
 // Historical / optional comparison backend. The public deployment runs the local engine in
 // src/lib/search/localSearch.ts and requires no Databricks credentials; this adapter is kept so
@@ -81,23 +81,27 @@ export async function databricksSearchChunks(query: string, queryType: QueryType
   const { host, token } = databricksConnection(); const index = process.env.DATABRICKS_INDEX_NAME;
   if (!host || !token || !index) throw new SearchServiceError(503, "Live search is not configured. Enable mock mode or add Databricks server credentials.");
   try {
-    const response = await fetchWithTimeout(`${host}/api/2.0/vector-search/indexes/${encodeURIComponent(index)}/query`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ query_text: query, query_type: queryType, columns: COLUMNS, num_results: numResults }), cache: "no-store" }, SEARCH_TIMEOUT_MS);
-    if (!response.ok) {
-      const details = await extractDatabricksError(response);
-      logDatabricksError(details, queryType);
-      const message = response.status === 401
-        ? "Databricks authentication failed."
-        : response.status === 403
-          ? "Databricks denied access to the search index."
-          : response.status === 400
-            ? "Databricks rejected the search request. Check the server logs for the diagnostic code."
-            : response.status === 429
-              ? "Search is temporarily rate limited."
-              : "The search service is temporarily unavailable.";
-      throw new SearchServiceError(response.status, message);
-    }
-    return parseDatabricksResults(await response.json());
-  } catch (error) { if (error instanceof SearchServiceError) throw error; if ((error as Error).name === "AbortError") throw new SearchServiceError(504, "Search timed out. Please try again."); throw new SearchServiceError(502, "Unable to reach the search service."); }
+    // Both the error body and the result body are read inside the timeout; previously the timer
+    // was released once the headers arrived, leaving a stalled read unbounded.
+    const payload = await fetchWithTimeout(`${host}/api/2.0/vector-search/indexes/${encodeURIComponent(index)}/query`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ query_text: query, query_type: queryType, columns: COLUMNS, num_results: numResults }), cache: "no-store" }, SEARCH_TIMEOUT_MS, async (response) => {
+      if (!response.ok) {
+        const details = await extractDatabricksError(response);
+        logDatabricksError(details, queryType);
+        const message = response.status === 401
+          ? "Databricks authentication failed."
+          : response.status === 403
+            ? "Databricks denied access to the search index."
+            : response.status === 400
+              ? "Databricks rejected the search request. Check the server logs for the diagnostic code."
+              : response.status === 429
+                ? "Search is temporarily rate limited."
+                : "The search service is temporarily unavailable.";
+        throw new SearchServiceError(response.status, message);
+      }
+      return await response.json() as unknown;
+    });
+    return parseDatabricksResults(payload);
+  } catch (error) { if (error instanceof SearchServiceError) throw error; if (error instanceof HttpTimeoutError || isAbortError(error)) throw new SearchServiceError(504, "Search timed out. Please try again."); throw new SearchServiceError(502, "Unable to reach the search service."); }
 }
 
 export { SearchServiceError };

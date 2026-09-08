@@ -89,11 +89,14 @@ Phase 1 baseline, for comparison:
 | HYBRID | 0.8889 | 1.0000 | 1.0000 | 0.9259 |
 
 The migration was a trade. Lexical retrieval improved clearly (Recall@1 0.7778 → 0.8889). Hybrid
-became sharper at rank one and now leads on MRR, but lost the perfect top-three coverage the
-Databricks hybrid had. Semantic retrieval regressed slightly at rank one. Sixteen of the eighteen
-queries are answered at rank one by every method, so the entire comparison rests on Q17, Q18, and
-small MRR differences — which is a statement about the benchmark's remaining resolution as much as
-about the engines.
+became sharper at rank one — it now holds the highest local Recall@1 outright, 17 of 18 — and
+leads on MRR, but lost the perfect top-three coverage the Databricks hybrid had. Semantic
+retrieval regressed slightly at rank one. Fifteen of the eighteen queries are answered at rank one
+by every method, so the entire comparison rests on Q01, Q17, Q18, and small MRR differences —
+which is a statement about the benchmark's remaining resolution as much as about the engines.
+
+The three local methods reach the same Recall@3 for different reasons rather than sharing one
+blind spot: ANN's single top-three miss is Q18, while full text and hybrid both miss Q17.
 
 These figures apply only to this prototype benchmark and establish no general legal-search
 accuracy. See [`docs/LOCAL_RETRIEVAL_EVALUATION.md`](docs/LOCAL_RETRIEVAL_EVALUATION.md) for the
@@ -304,7 +307,7 @@ or arbitrary execution. Production never falls back to mock data: a failed embed
 as a configuration or service error, not as a plausible-looking fake ranking.
 
 The corpus is intentionally tiny, relevance judgments are author-created, the benchmark has 18
-queries, and no general legal accuracy is established. Sixteen of those queries are solved at rank
+queries, and no general legal accuracy is established. Fifteen of those queries are solved at rank
 one by all three methods, so the benchmark has little remaining power to distinguish between good
 retrieval systems. Databricks reranking could not be tested in Phase 1 because it was not enabled
 in the workspace; no reranker results are claimed. See [`docs/`](docs/) for the technical deep

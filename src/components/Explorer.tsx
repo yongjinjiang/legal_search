@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { readError } from "@/lib/errorMessage";
+import { EVALUATION_NOTES } from "@/lib/evaluation/localBenchmark";
+import { SearchSession, type CompletedSearch } from "@/lib/ui/searchSession";
 import type { CaseResult, QueryType, SearchState } from "@/lib/search/types";
 
 const EXAMPLES = [
@@ -21,51 +23,24 @@ const METHOD_TECHNIQUE: Record<QueryType, string> = {
   ANN: "Embedding similarity over precomputed corpus vectors",
   FULL_TEXT: "BM25 lexical scoring",
 };
-// Figures are the measured per-method values in docs/EVALUATION_RESULTS.md; the metric is Recall@3 over the 18 queries.
-const EVALUATION_NOTES: Record<QueryType, { heading: string; metric: string; caption: string; body: string }> = {
-  HYBRID: {
-    heading: "Best average rank, one shared gap.",
-    metric: "17/18",
-    caption: "primary benchmark cases retrieved within the top 3 by hybrid search",
-    body: "Hybrid leads on average rank—MRR 0.9537, above the Databricks prototype's 0.9259—and ties the best Recall@1 at 0.9444. It shares the single top-three miss with both other methods: Q17 states a third-party relationship without using any of the words the opinion uses, and rank fusion could not rescue a case lexical search had placed seventh.",
-  },
-  ANN: {
-    heading: "Widest reach, weakest at rank one.",
-    metric: "17/18",
-    caption: "primary benchmark cases retrieved within the top 3 by semantic search",
-    body: "Semantic search is the only method here that reaches Recall@5 1.0000, and the only one that finds Thompson on Q17 at all, at rank three. It pays for that breadth at the very top: Recall@1 0.8333 and MRR 0.8907 are the lowest of the three.",
-  },
-  FULL_TEXT: {
-    heading: "Exact terms, same weakness on paraphrase.",
-    metric: "17/18",
-    caption: "primary benchmark cases retrieved within the top 3 by full-text search",
-    body: "This BM25 implementation improved on the Databricks lexical baseline—Recall@1 0.8889 against 0.7778, MRR 0.9153 against 0.8598—while reproducing its signature failure exactly: on Q17 the relevant case still lands at rank seven, because the query shares almost no vocabulary with it.",
-  },
-};
-
 export function Explorer() {
-  const [query, setQuery] = useState(""); const [method, setMethod] = useState<QueryType>("HYBRID"); const [completedSearch, setCompletedSearch] = useState<(SearchState & { mock: boolean }) | undefined>(); const [loading, setLoading] = useState(false); const [error, setError] = useState("");
+  const [query, setQuery] = useState(""); const [method, setMethod] = useState<QueryType>("HYBRID"); const [completedSearch, setCompletedSearch] = useState<CompletedSearch | undefined>(); const [loading, setLoading] = useState(false); const [error, setError] = useState("");
   const [summary, setSummary] = useState(""); const [summaryLoading, setSummaryLoading] = useState(false); const [summaryError, setSummaryError] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([]); const [chatInput, setChatInput] = useState(""); const [mode, setMode] = useState<"standard" | "detailed">("standard"); const [chatLoading, setChatLoading] = useState(false); const chatRef = useRef<HTMLTextAreaElement>(null); const searchRequestRef = useRef(0); const chatLogRef = useRef<HTMLDivElement>(null); const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  const [messages, setMessages] = useState<ChatMessage[]>([]); const [chatInput, setChatInput] = useState(""); const [mode, setMode] = useState<"standard" | "detailed">("standard"); const [chatLoading, setChatLoading] = useState(false); const chatRef = useRef<HTMLTextAreaElement>(null); const chatLogRef = useRef<HTMLDivElement>(null); const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   // The log scrolls within a bounded panel, so new replies would otherwise land below the fold.
   useEffect(() => { const log = chatLogRef.current; if (log) log.scrollTop = log.scrollHeight; }, [messages, chatLoading]);
   const searchState: SearchState | undefined = completedSearch;
   // Follows the selected method rather than the completed search, so the benchmark figures track the toggle.
   const note = EVALUATION_NOTES[method];
   const results = completedSearch?.results ?? [];
-  async function runSearch() { const requestId = ++searchRequestRef.current; const requestedQuery = query.trim(); const requestedMethod = method; setLoading(true); setError(""); setSummary(""); setSummaryError(""); try { const response = await fetch("/api/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: requestedQuery, queryType: requestedMethod, numResults: 20 }) }); if (!response.ok) throw new Error(await readError(response, "Search could not be completed.")); const data = await response.json(); if (requestId === searchRequestRef.current) setCompletedSearch({ query: requestedQuery, method: requestedMethod, results: data.results, mock: data.mock }); } catch (e) { if (requestId === searchRequestRef.current) { setError(e instanceof Error ? e.message : "Search failed."); setCompletedSearch(undefined); } } finally { if (requestId === searchRequestRef.current) setLoading(false); } }
   async function sendChat(seed?: string) { const content = (seed ?? chatInput).trim(); if (!content || chatLoading) return; const next = [...messages, { role: "user" as const, content }]; setMessages(next); setChatInput(""); setChatLoading(true); try { const response = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: content, mode, search: searchState }) }); const answer = response.ok ? (await response.json()).answer as string : await readError(response, "The technical guide is temporarily unavailable."); setMessages([...next, { role: "assistant", content: answer }]); } catch { setMessages([...next, { role: "assistant", content: "The technical guide is temporarily unavailable." }]); } finally { setChatLoading(false); } }
-  // Retrieval never calls a language model. This runs only from the button below the results,
-  // which is what keeps an ordinary search free of generation cost.
-  async function generateSummary() {
-    if (!completedSearch || summaryLoading) return;
-    setSummaryLoading(true); setSummaryError(""); setSummary("");
-    try {
-      const response = await fetch("/api/summarize", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: completedSearch.query, queryType: completedSearch.method }) });
-      if (!response.ok) throw new Error(await readError(response, "The research summary could not be generated."));
-      setSummary((await response.json()).summary as string);
-    } catch (e) { setSummaryError(e instanceof Error ? e.message : "The research summary could not be generated."); } finally { setSummaryLoading(false); }
-  }
+  // Search and summary requests overlap, and are sequenced in one place because of it: a summary
+  // of the previous query could otherwise resolve after a newer search and render under its
+  // results. Retrieval itself never calls a language model — the summary runs only from the button
+  // below the results, which is what keeps an ordinary search free of generation cost.
+  // See src/lib/ui/searchSession.ts. A lazy initializer, so the session is constructed once and
+  // never read during render.
+  const [session] = useState(() => new SearchSession({ setLoading, setError, setCompletedSearch, setSummary, setSummaryError, setSummaryLoading }));
   function togglePassage(caseId: string) { setExpanded((current) => { const next = new Set(current); if (!next.delete(caseId)) next.add(caseId); return next; }); }
   function askWhy(result: CaseResult) {
     const question = `Why did ${result.caseName} rank ${result.rank} for this query, and what retrieval signal likely helped?`; setChatInput(question);
@@ -82,13 +57,13 @@ export function Explorer() {
     <main id="top">
       <section className="hero"><div className="eyebrow"><span className="rule"/>Retrieval systems, made inspectable</div><h1>Find the precedent.<br/><em>Understand the retrieval.</em></h1><p>Semantic, lexical, and hybrid search across a focused corpus of U.S. Supreme Court opinions—with the engineering decisions and evaluation evidence in view.</p><div className="corpus-line"><span>8 opinions</span><span>350 pages</span><span>234 chunks</span><span>18 benchmark queries</span></div></section>
       <div className="workspace">
-        <section id="search" className="search-column"><div className="section-label"><span>01</span> Legal case search</div><div className="query-box"><label htmlFor="legal-query">Research question</label><textarea id="legal-query" value={query} maxLength={2000} onChange={(e) => setQuery(e.target.value)} placeholder="Describe a legal issue, fact pattern, or research question…"/><div className="query-footer"><div className="methods" role="group" aria-label="Search method">{(["HYBRID", "ANN", "FULL_TEXT"] as const).map((item) => <button key={item} aria-pressed={method === item} onClick={() => setMethod(item)}>{METHOD_LABELS[item]}</button>)}</div><button className="search-button" onClick={runSearch} disabled={loading || query.trim().length < 3}>{loading ? "Searching…" : "Search cases"}<span>→</span></button></div></div>
+        <section id="search" className="search-column"><div className="section-label"><span>01</span> Legal case search</div><div className="query-box"><label htmlFor="legal-query">Research question</label><textarea id="legal-query" value={query} maxLength={2000} onChange={(e) => setQuery(e.target.value)} placeholder="Describe a legal issue, fact pattern, or research question…"/><div className="query-footer"><div className="methods" role="group" aria-label="Search method">{(["HYBRID", "ANN", "FULL_TEXT"] as const).map((item) => <button key={item} aria-pressed={method === item} onClick={() => setMethod(item)}>{METHOD_LABELS[item]}</button>)}</div><button className="search-button" onClick={() => void session.search(query.trim(), method)} disabled={loading || query.trim().length < 3}>{loading ? "Searching…" : "Search cases"}<span>→</span></button></div></div>
           <p className="method-note"><b>{METHOD_LABELS[method]}</b> · {METHOD_TECHNIQUE[method]}</p>
           <div className="examples"><span>Try a benchmark query</span><div>{EXAMPLES.map(([label, value]) => <button key={label} onClick={() => setQuery(value)}>{label}</button>)}</div></div>
           {error && <div className="notice error">{error}</div>}
           {completedSearch && results.length > 0 && <div className="results"><div className="results-head"><div><span className="section-label"><span>RESULTS</span> Case-level ranking</span><h2>{results.length} unique precedents</h2></div><div className="method-badge">{completedSearch.method.replace("FULL_TEXT", "FULL TEXT")}{completedSearch.mock && <small>MOCK DATA — NOT RETRIEVED</small>}</div></div>{results.map((result) => <article className="result-card" key={result.caseId}><div className="rank">{String(result.rank).padStart(2, "0")}</div><div className="result-body"><div className="result-meta"><span>{result.citation}</span><span>Pages {result.pageStart}–{result.pageEnd}</span></div><h3>{result.caseName}</h3><blockquote className={expanded.has(result.caseId) ? undefined : "clamped"}>{result.bestPassage}</blockquote>{result.bestPassage.length > 420 && <button className="passage-toggle" aria-expanded={expanded.has(result.caseId)} onClick={() => togglePassage(result.caseId)}>{expanded.has(result.caseId) ? "Show less" : "Show full passage"}</button>}<div className="card-actions"><details><summary>Additional matching passages <span>{result.passages.length - 1}</span></summary>{result.passages.slice(1).map((p) => <p key={p.chunkId}><b>Pages {p.pageStart}–{p.pageEnd}</b> {p.chunkText}</p>)}</details><button onClick={() => askWhy(result)}>Ask why this result ↗</button></div></div></article>)}
             <div className="summary-panel">
-              <div className="summary-head"><div><span className="section-label"><span>OPTIONAL</span> Grounded synthesis</span><p>Sends the highest-ranked passages to a language model. Retrieval above ran without one.</p></div><button onClick={generateSummary} disabled={summaryLoading}>{summaryLoading ? "Generating…" : "Generate research summary"}<span>↗</span></button></div>
+              <div className="summary-head"><div><span className="section-label"><span>OPTIONAL</span> Grounded synthesis</span><p>Sends the highest-ranked passages to a language model. Retrieval above ran without one.</p></div><button onClick={() => void session.summarize()} disabled={summaryLoading || loading}>{summaryLoading ? "Generating…" : "Generate research summary"}<span>↗</span></button></div>
               {summaryError && <div className="notice error">{summaryError}</div>}
               {summary && <div className="summary-body"><p>{summary}</p><small>Generated from the retrieved passages only. Verify against the opinions before relying on it. Not legal advice.</small></div>}
             </div>

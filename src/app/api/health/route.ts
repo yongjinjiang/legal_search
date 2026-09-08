@@ -3,6 +3,8 @@ import { embeddingProvider } from "@/lib/embeddings/openai";
 import { llmProvider } from "@/lib/llm/openai";
 import { mockEnabled, searchBackend } from "@/lib/search/backend";
 import { indexReadiness } from "@/lib/search/localIndex";
+import { embeddingMismatch } from "@/lib/search/embeddingCompatibility";
+import type { EmbeddingProvider } from "@/lib/embeddings/provider";
 
 // The README's deployment check hits this route, so "ok" must be unreachable when a deployment
 // cannot actually serve search. Under the local backend that means loading and cross-validating
@@ -15,9 +17,11 @@ export async function GET() {
 
   // A malformed embedding configuration is reported as a reason rather than thrown, so an
   // operator sees the specific problem instead of a 500.
-  let embeddings = false;
+  let embeddings: EmbeddingProvider | undefined;
   let embeddingError: string | undefined;
-  try { embeddings = Boolean(embeddingProvider()); } catch (error) { embeddingError = error instanceof Error ? error.message : "The embedding configuration is invalid."; }
+  // Constructing the provider reads environment variables and makes no request, so health still
+  // costs nothing.
+  try { embeddings = embeddingProvider(); } catch (error) { embeddingError = error instanceof Error ? error.message : "The embedding configuration is invalid."; }
   // A rejected reasoning effort is a configuration fault an operator can only fix if it is
   // reported; otherwise it surfaces as a generic chat outage on the first question asked.
   let chatConfigured = false;
@@ -36,7 +40,14 @@ export async function GET() {
   // Full text needs only the artifacts; semantic and hybrid additionally need embedding
   // credentials, so a deployment with a valid index but no API key is degraded rather than down.
   const lexicalConfigured = readiness.ready;
-  const semanticConfigured = lexicalConfigured && embeddings;
+  let semanticConfigured = lexicalConfigured && Boolean(embeddings);
+  // Credentials alone were the whole test until a valid-looking width — 512 against a
+  // 1024-dimensional index — reported "ok" and then failed every semantic query. The comparison
+  // is the same one the query path makes, imported rather than restated.
+  if (readiness.ready && embeddings) {
+    const mismatch = embeddingMismatch(embeddings, readiness.index.manifest);
+    if (mismatch) { semanticConfigured = false; embeddingError = mismatch; }
+  }
   const status = !lexicalConfigured ? "unavailable" : semanticConfigured && chatConfigured ? "ok" : "degraded";
   const manifest = readiness.ready ? readiness.index.manifest : undefined;
   return NextResponse.json({

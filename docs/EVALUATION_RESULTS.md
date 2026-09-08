@@ -38,9 +38,22 @@ dimensions, the BM25 parameters, and the RRF depth, and are then used to report 
 held-out test set exists, so the table describes the committed engine on this benchmark rather
 than estimating performance on unseen queries.
 
-Sixteen of the eighteen queries are answered at rank one by every method, so the whole comparison
-rests on Q17, Q18, and small MRR differences. Differences of this size, on 18 author-labelled
+### Per-query rank of the primary gold case
+
+| Query | ANN | FULL_TEXT | HYBRID |
+|---|---:|---:|---:|
+| Q01 | 2 | 1 | 1 |
+| Q02–Q16 | 1 | 1 | 1 |
+| Q17 | 3 | 7 | 6 |
+| Q18 | 5 | 3 | 1 |
+
+Fifteen of the eighteen queries are answered at rank one by every method, so the whole comparison
+rests on Q01, Q17, Q18, and small MRR differences. Differences of this size, on 18 author-labelled
 queries, do not establish that one retrieval system is better than another in general.
+
+The equal Recall@3 column hides a real difference: the three methods miss different queries. ANN's
+one top-three miss is Q18; full text and hybrid both miss Q17. Hybrid's Recall@1 is the highest of
+the three outright — 17 of 18 against full text's 16 and ANN's 15 — rather than tied.
 
 ## Multi-relevant metrics
 
@@ -66,7 +79,8 @@ implementation produced; two independent BM25-style implementations landing on t
 is evidence the benchmark is measuring the query rather than the engine. Hybrid lands at rank 6,
 between its two inputs, and this single query is the entire reason HYBRID Recall@3 is 0.9444
 rather than 1.0000. When one input to a fusion is confidently wrong, the compromise is worse than
-the better input alone.
+the better input alone. Both lexical and hybrid rank *Thompson* below the five cases the page
+displays; neither fails to retrieve it.
 
 The mechanism is structural: RRF fuses chunk ranks, so a case accumulates rank credit once per
 chunk. *Thompson* has 7 chunks; *Bostock* has 101 and *Nassar* 39. A long opinion gets more
@@ -74,9 +88,10 @@ chances to occupy a fused slot. A case-level fusion variant was implemented and 
 brought *Thompson* into the Q17 top five but lowered HYBRID Recall@1 and Recall@3 overall, so it
 was rejected.
 
-**Q18** deliberately withheld statute, protected activity, and adverse-action type, so seven of
-the eight opinions are legitimately relevant. Hybrid places the primary *Burlington* case first
-and returns 5 of 7 relevant cases in the top five. ANN reproduces the Phase 1 Databricks result
+**Q18** is ANN's own top-three miss — the only one it has, and a different query from the one full
+text and hybrid miss. It deliberately withheld statute, protected activity, and adverse-action
+type, so seven of the eight opinions are legitimately relevant. Hybrid places the primary
+*Burlington* case first and returns 5 of 7 relevant cases in the top five. ANN reproduces the Phase 1 Databricks result
 exactly — Burlington at rank 5, with 3/7 relevant at top 3, 4/7 at top 4, and 5/7 at top 5.
 Ranking one of seven relevant precedents fifth is a defensible answer to an underspecified
 question, not a retrieval failure.
@@ -94,6 +109,13 @@ npm run benchmark
 
 The second command uses the original Databricks-era scorer, unmodified, and reproduces the
 primary-gold table independently.
+
+The figures the web page displays live in `src/lib/evaluation/localBenchmark.ts`, and
+`tests/evaluationConsistency.test.ts` recomputes each of them from the saved runs and the
+canonical gold labels in `data/evaluation/legal_search_queries.csv`. To refresh them after a
+rebuild, run `npm test -- evaluationConsistency`, correct the constants — and the surrounding
+prose — to whatever the failures report, and run it again. The check reads the committed evidence
+only; it makes no provider call.
 
 Because Phase 1's per-query rankings were lost, query-level improvement and degradation can only
 be stated for the two failures the original documentation described in prose. Everything else is

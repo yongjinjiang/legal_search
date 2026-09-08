@@ -77,12 +77,16 @@ Recall@1 0.8333, Recall@3 0.9444, Recall@5 1.0000, MRR 0.8907; FULL_TEXT 0.8889,
 These are development-set figures: the same 18 queries selected the configuration and then
 reported it, with no held-out test set. The migration traded coverage for precision. Lexical retrieval improved clearly. Hybrid became
 sharper at rank one and leads on MRR, but lost the perfect top-three coverage Databricks hybrid
-had. Semantic retrieval regressed slightly at rank one. Sixteen of eighteen queries are answered
-at rank one by all three methods, so the comparison rests on two queries.
+had. Semantic retrieval regressed slightly at rank one. Fifteen of eighteen queries are answered
+at rank one by all three methods, so the comparison rests on three: Q01, where ANN alone places the
+gold case second, and Q17 and Q18. Hybrid's Recall@1 is the highest of the three outright, 17 of
+18, and the equal Recall@3 hides different misses — ANN's is Q18, full text's and hybrid's is
+Q17.
 
 Q17 paraphrased third-party retaliation without canonical terminology: semantic retrieval places
 *Thompson* at rank 3, lexical at rank 7 — the same rank Databricks full-text produced — and hybrid
-at 6. That single query is why hybrid Recall@3 is 0.9444 rather than 1.0000. Q18 was deliberately
+at 6. The UI displays five cases, so under full text and hybrid the gold case is ranked below what
+is shown rather than missing from the ranking. That single query is why hybrid Recall@3 is 0.9444 rather than 1.0000. Q18 was deliberately
 underspecified with seven relevant cases; hybrid places *Burlington* first and returns 5 of 7
 relevant cases in the top five, while ANN reproduces the Phase 1 result exactly at rank 5 with
 3/7, 4/7, and 5/7 coverage.

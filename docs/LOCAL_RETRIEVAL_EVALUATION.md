@@ -77,12 +77,17 @@ Read honestly, the change is a trade rather than a win:
 
 | Query | ANN | FULL_TEXT | HYBRID |
 |---|---:|---:|---:|
-| Q01–Q16 | 1 (except Q01 ANN: 2) | 1 | 1 |
+| Q01 | 2 | 1 | 1 |
+| Q02–Q16 | 1 | 1 | 1 |
 | Q17 | 3 | 7 | 6 |
 | Q18 | 5 | 3 | 1 |
 
-Sixteen of the eighteen queries are solved at rank one by every method. All of the interesting
-behaviour is in Q17 and Q18.
+Fifteen of the eighteen queries are solved at rank one by every method. All of the interesting
+behaviour is in Q01, Q17 and Q18.
+
+The identical Recall@3 column is a coincidence of counting, not a shared weakness: ANN's single
+top-three miss is Q18, and full text's and hybrid's is Q17. Recall@1 separates them cleanly —
+hybrid 17 of 18, full text 16, ANN 15.
 
 **Per-query comparison against Databricks is not possible.** The original workspace run's raw
 rankings were never preserved — `docs/EVALUATION_RESULTS.md` recorded this before the migration
@@ -132,7 +137,9 @@ test, and the results split cleanly:
   agreeing to the position is good evidence the benchmark is measuring the query, not the engine.
 - **Fusion cannot rescue it.** RRF combines a rank-3 semantic signal with a rank-7 lexical one and
   lands on 6. This is the mechanism behind the lost Recall@3: hybrid is a compromise, and when one
-  input is confidently wrong, the compromise is worse than the better input alone.
+  input is confidently wrong, the compromise is worse than the better input alone. The page shows
+  five cases, so under full text and hybrid *Thompson* is ranked below the displayed results — it
+  is present in the ranking, not absent from it.
 
 Why fusion loses here is structural. RRF operates on chunk ranks, so a case accumulates rank
 credit once per chunk. *Thompson* has 7 chunks out of 234; *Bostock* has 101 and *Nassar* 39. A
@@ -269,8 +276,8 @@ train and test would leave neither half able to measure anything, so the honest 
 but a separately authored, expert-graded test set collected after freezing this configuration.
 
 The corpus is 8 opinions and 234 chunks. The benchmark is 18 queries with author-created relevance
-judgments. Sixteen of those queries are solved at rank one by all three methods, so the entire
-comparison rests on two queries and a handful of MRR fractions — differences of 0.0014 MRR are
+judgments. Fifteen of those queries are solved at rank one by all three methods, so the entire
+comparison rests on three queries and a handful of MRR fractions — differences of 0.0014 MRR are
 noise, and even the 0.0556 recall differences are one query out of eighteen. No claim about
 general legal-search accuracy follows from any of this. Expert graded relevance judgments, a
 substantially larger corpus, and many more queries would be needed before these numbers could

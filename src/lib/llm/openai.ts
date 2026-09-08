@@ -1,4 +1,4 @@
-import { fetchWithTimeout } from "@/lib/http";
+import { fetchWithTimeout, HttpTimeoutError, isAbortError } from "@/lib/http";
 import { LlmServiceError, type CompletionOptions, type LlmMessage, type LlmProvider } from "./provider";
 
 export const DEFAULT_CHAT_MODEL = "gpt-5-mini";
@@ -69,29 +69,36 @@ export function createOpenAIChatProvider(settings: OpenAIChatSettings): LlmProvi
           : { max_tokens: options.maxOutputTokens, temperature: 0.2 }),
       };
       const started = Date.now();
-      let response: Response;
+      let payload: ChatResponse;
       try {
-        response = await fetchWithTimeout(url, { method: "POST", headers: { Authorization: `Bearer ${settings.apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify(body), cache: "no-store" }, options.timeoutMs);
+        // The body is parsed inside the timeout, so a provider that flushes headers and then
+        // stalls is cut off at the budget instead of running until the platform kills the
+        // invocation.
+        payload = await fetchWithTimeout(url, { method: "POST", headers: { Authorization: `Bearer ${settings.apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify(body), cache: "no-store" }, options.timeoutMs, async (response, context) => {
+          if (!response.ok) {
+            // Visitor prompts can be echoed inside provider error bodies, so only the status is logged.
+            console.error("[llm] request failed", { provider: "openai", model: settings.model, status: response.status });
+            throw new LlmServiceError(response.status === 429 ? 429 : 503, response.status === 429 ? "The service is busy. Try again shortly." : "The service is temporarily unavailable.");
+          }
+          try {
+            return await response.json() as ChatResponse;
+          } catch (error) {
+            // A read the timeout aborted is not a malformed payload; reporting it as one sent
+            // operators looking for a provider bug instead of at the budget.
+            if (context.timedOut() || isAbortError(error)) throw error;
+            console.error("[llm] response body could not be read", { provider: "openai", model: settings.model, name: (error as Error).name, ms: Date.now() - started });
+            throw new LlmServiceError(502, "The service returned an unreadable response.");
+          }
+        });
       } catch (error) {
+        if (error instanceof LlmServiceError) throw error;
         // Transport failures used to produce no log line at all, which made a report of "the
         // service is temporarily unavailable" impossible to diagnose from production logs. The
         // error name and cause are provider diagnostics, never request content.
         const cause = (error as { cause?: { code?: string; message?: string } }).cause;
         console.error("[llm] request did not complete", { provider: "openai", model: settings.model, name: (error as Error).name, code: cause?.code, cause: cause?.message?.slice(0, 200), ms: Date.now() - started });
-        if ((error as Error).name === "AbortError" || (error as Error).name === "TimeoutError") throw new LlmServiceError(504, "The request timed out. Please try again.");
+        if (error instanceof HttpTimeoutError || isAbortError(error)) throw new LlmServiceError(504, "The request timed out. Please try again.");
         throw new LlmServiceError(502, "Unable to reach the language model service.");
-      }
-      if (!response.ok) {
-        // Visitor prompts can be echoed inside provider error bodies, so only the status is logged.
-        console.error("[llm] request failed", { provider: "openai", model: settings.model, status: response.status });
-        throw new LlmServiceError(response.status === 429 ? 429 : 503, response.status === 429 ? "The service is busy. Try again shortly." : "The service is temporarily unavailable.");
-      }
-      let payload: ChatResponse;
-      try {
-        payload = await response.json() as ChatResponse;
-      } catch (error) {
-        console.error("[llm] response body could not be read", { provider: "openai", model: settings.model, name: (error as Error).name, ms: Date.now() - started });
-        throw new LlmServiceError(502, "The service returned an unreadable response.");
       }
       const answer = payload.choices?.[0]?.message?.content?.trim();
       // The same token accounting is recorded either way. On success it makes the next budget
@@ -115,6 +122,14 @@ export function createOpenAIChatProvider(settings: OpenAIChatSettings): LlmProvi
         // fault, not an outage: it recurs until the budget is raised.
         console.error("[llm] empty completion", accounting);
         throw new LlmServiceError(502, accounting.finishReason === "length" ? "The response exceeded its length budget before any text was produced." : "The service returned an empty response.");
+      }
+      if (accounting.finishReason === "length") {
+        // Nonempty and truncated. The guide and the summary both present the returned string as a
+        // finished answer, so a completion that stopped at the budget would be shown as complete —
+        // a sentence short of a citation, or missing the caveat the prompt asks for last. Rejecting
+        // is a worse experience and a truthful one. Accounting only; never the answer text.
+        console.error("[llm] truncated completion", accounting);
+        throw new LlmServiceError(502, "The response was cut off before it was complete. Please try again.");
       }
       console.log("[llm] ok", accounting);
       return answer;

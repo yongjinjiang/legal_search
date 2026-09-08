@@ -46,6 +46,20 @@ describe.sequential("research summary endpoint", () => {
     expect(body.messages[1].content).not.toContain("INJECTED TEXT");
     expect(body.messages[1].content).toContain("<retrieved_passages>");
   });
+
+  it("fails the request rather than returning a truncated summary as a finished one", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    process.env.MOCK_SEARCH = "true";
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      choices: [{ message: { content: "The first case holds that" }, finish_reason: "length" }],
+    }), { status: 200 })));
+    const response = await summarize(post({ query: "but-for causation", queryType: "FULL_TEXT" }));
+    expect(response.status).not.toBe(200);
+    const payload = await response.json() as { error?: string; summary?: string };
+    expect(payload.summary).toBeUndefined();
+    expect(payload.error).toBeTruthy();
+  });
 });
 
 describe.sequential("search stays pure retrieval", () => {

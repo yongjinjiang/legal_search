@@ -105,9 +105,10 @@ before collapse would be the real fix.
 ## Benchmark and failure analysis
 
 The 18-query benchmark pairs natural-language fact patterns with exact-term queries across the
-eight cases. Recall@k and reciprocal rank are computed after case collapse. Sixteen of the
-eighteen queries are answered at rank one by all three methods; the comparison rests on Q17 and
-Q18. See `EVALUATION_RESULTS.md` for the measured values and `LOCAL_RETRIEVAL_EVALUATION.md` for
+eight cases. Recall@k and reciprocal rank are computed after case collapse. Fifteen of the
+eighteen queries are answered at rank one by all three methods; the comparison rests on Q01, Q17
+and Q18. The three methods tie on Recall@3 without sharing a blind spot — ANN's one top-three miss
+is Q18, full text's and hybrid's is Q17 — and hybrid holds the highest Recall@1 outright. See `EVALUATION_RESULTS.md` for the measured values and `LOCAL_RETRIEVAL_EVALUATION.md` for
 the embedding dimension tradeoff, the BM25 sweep, and the 100-cell RRF grid.
 
 Q17 is the one genuine regression, and its cause is structural: RRF fuses chunk ranks, so a case

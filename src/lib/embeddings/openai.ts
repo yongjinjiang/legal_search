@@ -1,5 +1,5 @@
 import { EMBEDDING_BATCH_SIZE, EMBEDDING_BUILD_RETRY_DELAYS_MS, EMBEDDING_TIMEOUT_MS } from "@/lib/limits";
-import { fetchWithTimeout } from "@/lib/http";
+import { fetchWithTimeout, HttpTimeoutError, isAbortError } from "@/lib/http";
 import { EmbeddingServiceError, type EmbeddingProvider } from "./provider";
 
 // Chosen by benchmark, not by price: text-embedding-3-small at 512 dimensions cost 0.0556
@@ -41,34 +41,45 @@ export function createOpenAIEmbeddingProvider(settings: OpenAIEmbeddingSettings)
 
   async function embed(inputs: string[], timeoutMs: number): Promise<number[][]> {
     const startedAt = Date.now();
-    let response: Response;
+    let payload: EmbeddingResponse & { usage?: { prompt_tokens?: number } };
     try {
-      response = await fetchWithTimeout(url, {
+      // The body is read inside the budget. Previously the timer was released as soon as the
+      // headers arrived, so a stalled body could outlive the timeout entirely.
+      payload = await fetchWithTimeout(url, {
         method: "POST",
         headers: { Authorization: `Bearer ${settings.apiKey}`, "Content-Type": "application/json" },
         // `dimensions` is a Matryoshka truncation supported by text-embedding-3-*. Sending it on
         // both the corpus build and the query keeps the two vector spaces identical.
         body: JSON.stringify({ model: settings.model, input: inputs, dimensions: settings.dimensions }),
         cache: "no-store",
-      }, timeoutMs);
+      }, timeoutMs, async (response, context) => {
+        if (!response.ok) {
+          // The provider's own message can echo request content; only the status is logged.
+          console.error("[embeddings] request failed", { provider: "openai", model: settings.model, status: response.status });
+          const message = response.status === 401 || response.status === 403
+            ? "The embedding service rejected the server credentials."
+            : response.status === 429
+              ? "Semantic search is temporarily rate limited. Full text search is unaffected."
+              : "The embedding service is temporarily unavailable.";
+          // Rejected credentials are the same class of operator problem as a missing key, so they
+          // report 503 rather than 502; a visitor cannot fix either by retrying.
+          const authFailure = response.status === 401 || response.status === 403;
+          throw new EmbeddingServiceError(response.status === 429 ? 429 : authFailure ? 503 : 502, message, !authFailure);
+        }
+        try {
+          return await response.json() as EmbeddingResponse & { usage?: { prompt_tokens?: number } };
+        } catch (error) {
+          // A timed-out read must reach the timeout branch below rather than be filed as a
+          // contract violation, which is not retryable and would abort a build.
+          if (context.timedOut() || isAbortError(error)) throw error;
+          throw new EmbeddingServiceError(502, "The embedding service returned an unreadable response.");
+        }
+      });
     } catch (error) {
-      if ((error as Error).name === "AbortError") throw new EmbeddingServiceError(504, "The embedding service timed out. Please try again.", true);
+      if (error instanceof EmbeddingServiceError) throw error;
+      if (error instanceof HttpTimeoutError || isAbortError(error)) throw new EmbeddingServiceError(504, "The embedding service timed out. Please try again.", true);
       throw new EmbeddingServiceError(502, "Unable to reach the embedding service.", true);
     }
-    if (!response.ok) {
-      // The provider's own message can echo request content; only the status is logged.
-      console.error("[embeddings] request failed", { provider: "openai", model: settings.model, status: response.status });
-      const message = response.status === 401 || response.status === 403
-        ? "The embedding service rejected the server credentials."
-        : response.status === 429
-          ? "Semantic search is temporarily rate limited. Full text search is unaffected."
-          : "The embedding service is temporarily unavailable.";
-      // Rejected credentials are the same class of operator problem as a missing key, so they
-      // report 503 rather than 502; a visitor cannot fix either by retrying.
-      const authFailure = response.status === 401 || response.status === 403;
-      throw new EmbeddingServiceError(response.status === 429 ? 429 : authFailure ? 503 : 502, message, !authFailure);
-    }
-    const payload = await response.json() as EmbeddingResponse & { usage?: { prompt_tokens?: number } };
     console.log("[embeddings] ok", { provider: "openai", model: settings.model, dimensions: settings.dimensions, inputs: inputs.length, promptTokens: payload.usage?.prompt_tokens, ms: Date.now() - startedAt });
     const rows = payload.data;
     if (!Array.isArray(rows) || rows.length !== inputs.length) throw new EmbeddingServiceError(502, "The embedding service returned an unexpected response.");

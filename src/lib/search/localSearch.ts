@@ -4,6 +4,7 @@ import { embeddingProvider } from "@/lib/embeddings/openai";
 import { EmbeddingServiceError } from "@/lib/embeddings/provider";
 import { RRF_CANDIDATE_DEPTH, RRF_K, reciprocalRankFusion } from "./hybridSearch";
 import { SearchIndexError, searchBm25, type ScoredDoc } from "./bm25";
+import { embeddingMismatch } from "./embeddingCompatibility";
 import { searchEmbeddings } from "./semanticSearch";
 import { loadLocalIndex } from "./localIndex";
 import { SearchServiceError } from "./errors";
@@ -27,9 +28,12 @@ async function embedQuery(query: string, index: LocalSearchIndex, deadlineAt?: n
   // Never fall back to lexical or mock results here: a visitor who selected semantic search must
   // be told the semantic path is unavailable rather than shown a different ranking labelled ANN.
   if (!provider) throw new SearchServiceError(503, "Semantic search is not configured on this deployment. Full text search remains available.");
-  if (provider.model !== index.manifest.embedding.model || provider.dimensions !== index.manifest.embedding.dimensions) {
+  // Shared with /api/health so the deployment check cannot call a configuration serviceable that
+  // this function is about to refuse.
+  const mismatch = embeddingMismatch(provider, index.manifest);
+  if (mismatch) {
     console.error("[local-search] embedding configuration does not match the built index", { runtimeModel: provider.model, runtimeDimensions: provider.dimensions, indexModel: index.manifest.embedding.model, indexDimensions: index.manifest.embedding.dimensions });
-    throw new SearchServiceError(503, "Semantic search is misconfigured: the query embedding model does not match the built index.");
+    throw new SearchServiceError(503, mismatch);
   }
   try {
     return await provider.embedQuery(query, budgetFor(EMBEDDING_TIMEOUT_MS, deadlineAt));

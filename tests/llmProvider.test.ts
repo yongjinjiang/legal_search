@@ -71,6 +71,28 @@ describe("OpenAI chat provider", () => {
     await expect(createOpenAIChatProvider(settings).complete([{ role: "user", content: "hi" }], options)).rejects.toThrow(/empty response/);
   });
 
+  it("refuses a nonempty answer that stopped at the token budget", async () => {
+    // finish_reason "length" means the model was cut off, not that it finished. Both callers
+    // present the returned string as a complete answer, so a truncated one is shown as though it
+    // were whole — a summary missing its final citation reads exactly like a summary that had
+    // none. Accounting is logged; the answer text never is.
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      choices: [{ message: { content: "Burlington Northern establishes that a materially adverse action" }, finish_reason: "length" }],
+      usage: { prompt_tokens: 3776, completion_tokens: 4000, completion_tokens_details: { reasoning_tokens: 1200 } },
+    }), { status: 200 })));
+    await expect(createOpenAIChatProvider(settings).complete([{ role: "user", content: "hi" }], options)).rejects.toThrow(/cut off/);
+    expect(error).toHaveBeenCalledWith("[llm] truncated completion", expect.objectContaining({ finishReason: "length", completionTokens: 4000, reasoningTokens: 1200 }));
+    expect(error.mock.calls.flat().some((argument) => JSON.stringify(argument).includes("Burlington"))).toBe(false);
+  });
+
+  it("keeps an ordinary completion that stopped on its own", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(reply("a complete answer", "stop")));
+    await expect(createOpenAIChatProvider(settings).complete([{ role: "user", content: "hi" }], options)).resolves.toBe("a complete answer");
+    expect(log).toHaveBeenCalledWith("[llm] ok", expect.objectContaining({ finishReason: "stop" }));
+  });
+
   it("maps upstream failures to public-safe messages and never echoes the provider body", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     for (const [status, expected] of [[429, 429], [500, 503]] as const) {

@@ -1,4 +1,4 @@
-export { fetchWithTimeout } from "@/lib/http";
+export { fetchWithTimeout, HttpTimeoutError, isAbortError } from "@/lib/http";
 
 export type DatabricksConnection = { host?: string; token?: string };
 

@@ -1,9 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { GET as health } from "../src/app/api/health/route";
 import { resetLocalIndexCache } from "../src/lib/search/localIndex";
+import { localSearchChunks } from "../src/lib/search/localSearch";
 
 const REAL = path.join(process.cwd(), "data", "search");
 const FILES = ["index_manifest.json", "documents.json", "bm25_index.json", "embeddings.json"] as const;
@@ -85,6 +86,52 @@ describe.sequential("health readiness", () => {
     const response = await health();
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({ status: "degraded", lexicalConfigured: true, semanticConfigured: false });
+  });
+
+  // Health used to stop at "artifacts load and a key exists". A width that parses is not a width
+  // the committed index can serve, and this deployment reported ok while every semantic query
+  // failed.
+  it.each([
+    ["a mismatched dimension", { OPENAI_EMBEDDING_DIMENSIONS: "512" }, "512 dimensions"],
+    ["a mismatched model", { OPENAI_EMBEDDING_MODEL: "text-embedding-3-small" }, "text-embedding-3-small"],
+  ])("is degraded rather than ok under %s", async (_label, env, expected) => {
+    process.env.OPENAI_API_KEY = "test-key";
+    Object.assign(process.env, env);
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const response = await health();
+    expect(response.status).toBe(200);
+    const payload = await response.json() as { status: string; lexicalConfigured: boolean; semanticConfigured: boolean; embeddingError?: string };
+    expect(payload).toMatchObject({ status: "degraded", lexicalConfigured: true, semanticConfigured: false });
+    expect(payload.embeddingError).toContain(expected);
+    expect(payload.embeddingError).toContain("text-embedding-3-large");
+    // The comparison is against the manifest, so it costs nothing and reaches no provider.
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it("reports exactly what retrieval would refuse", async () => {
+    // The two used to disagree, which is the whole defect: health called a configuration
+    // serviceable that the query path was about to reject.
+    process.env.OPENAI_API_KEY = "test-key";
+    process.env.OPENAI_EMBEDDING_DIMENSIONS = "512";
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const payload = await (await health()).json() as { embeddingError: string };
+    await expect(localSearchChunks("materially adverse action", "ANN", 5)).rejects.toThrow(payload.embeddingError);
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("stays ok when the configuration matches the committed manifest", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    process.env.OPENAI_EMBEDDING_MODEL = "text-embedding-3-large";
+    process.env.OPENAI_EMBEDDING_DIMENSIONS = "1024";
+    const payload = await (await health()).json() as { status: string; semanticConfigured: boolean; embeddingError?: string };
+    expect(payload).toMatchObject({ status: "ok", semanticConfigured: true });
+    expect(payload.embeddingError).toBeUndefined();
   });
 
   it("reports an invalid embedding configuration instead of failing the request", async () => {
