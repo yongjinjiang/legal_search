@@ -22,6 +22,7 @@ describe.sequential("service integration", () => {
 
     const response = await search(new Request("http://localhost/api/search", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ query: "but-for causation", queryType: "ANN", numResults: 20 }),
     }));
     expect(response.status).toBe(200);
@@ -45,6 +46,7 @@ describe.sequential("service integration", () => {
 
     const response = await search(new Request("http://localhost/api/search", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ query: "valid legal query", queryType: "HYBRID", numResults: 20 }),
     }));
     expect(response.status).toBe(200);
@@ -89,7 +91,7 @@ describe.sequential("service integration", () => {
   });
 
   it("rejects a malformed search body as a client error", async () => {
-    const response = await search(new Request("http://localhost/api/search", { method: "POST", body: "{not-json" }));
+    const response = await search(new Request("http://localhost/api/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{not-json" }));
     // A body the client can never fix by retrying must not be reported as a server failure.
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({ error: "Invalid search request." });

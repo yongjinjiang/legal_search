@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rejectUnsafeRequest } from "@/lib/api/guard";
 import { generateLegalSummary, SummaryServiceError } from "@/lib/chat/summary";
 import { summaryRequestSchema } from "@/lib/chat/validation";
 import { deadlineIn } from "@/lib/deadline";
@@ -11,6 +12,7 @@ import { searchCases, SearchServiceError } from "@/lib/search/backend";
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
+  const rejected = rejectUnsafeRequest(request); if (rejected) return rejected;
   let raw: unknown;
   try { raw = await request.json(); } catch { return NextResponse.json({ error: "Invalid summary request." }, { status: 400 }); }
   const body = summaryRequestSchema.safeParse(raw);

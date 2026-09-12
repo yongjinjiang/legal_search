@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { probe } from "@/lib/monitor/probe";
 import { mockEnabled, searchBackend } from "@/lib/search/backend";
@@ -13,11 +14,19 @@ import { QUERY_TYPES } from "@/lib/search/types";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
+// Compared in constant time so the response latency does not depend on how many leading bytes
+// of a guessed token were right.
+function bearerMatches(header: string | null, secret: string): boolean {
+  const expected = Buffer.from(`Bearer ${secret}`);
+  const actual = Buffer.from(header ?? "");
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
+}
+
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   // Fail closed: without a secret this route would be a public trigger for paid embedding calls.
   if (!secret) return NextResponse.json({ error: "Monitor is not configured." }, { status: 503 });
-  if (request.headers.get("authorization") !== `Bearer ${secret}`) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!bearerMatches(request.headers.get("authorization"), secret)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   // Mock mode answers from a fixture, so a green run would assert nothing about real retrieval.
   // Fail closed rather than report health the monitor cannot actually observe.

@@ -4,7 +4,7 @@ import { POST as search } from "../src/app/api/search/route";
 import { summaryRequestSchema } from "../src/lib/chat/validation";
 
 const originalEnv = { ...process.env };
-const post = (body: unknown) => new Request("http://localhost/api/summarize", { method: "POST", body: typeof body === "string" ? body : JSON.stringify(body) });
+const post = (body: unknown) => new Request("http://localhost/api/summarize", { method: "POST", headers: { "Content-Type": "application/json" }, body: typeof body === "string" ? body : JSON.stringify(body) });
 
 afterEach(() => { process.env = { ...originalEnv }; vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
@@ -69,7 +69,7 @@ describe.sequential("search stays pure retrieval", () => {
     delete process.env.MOCK_DATABRICKS;
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    const response = await search(new Request("http://localhost/api/search", { method: "POST", body: JSON.stringify({ query: "materially adverse employment action", queryType: "FULL_TEXT" }) }));
+    const response = await search(new Request("http://localhost/api/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: "materially adverse employment action", queryType: "FULL_TEXT" }) }));
     expect(response.status).toBe(200);
     const payload = await response.json() as { backend: string; mock: boolean; results: Array<{ caseId: string }> };
     expect(payload).toMatchObject({ backend: "local", mock: false });

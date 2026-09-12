@@ -3,7 +3,7 @@ import { POST } from "../src/app/api/chat/route";
 
 const originalEnv = { ...process.env };
 
-const ask = (question: string) => POST(new Request("http://localhost/api/chat", { method: "POST", body: JSON.stringify({ question }) }));
+const ask = (question: string) => POST(new Request("http://localhost/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question }) }));
 
 afterEach(() => { process.env = { ...originalEnv }; vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
@@ -12,6 +12,7 @@ describe("chat API errors", () => {
     delete process.env.OPENAI_API_KEY;
     const response = await POST(new Request("http://localhost/api/chat", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question: "How does search work?" }),
     }));
     expect(response.status).toBe(503);
@@ -22,6 +23,7 @@ describe("chat API errors", () => {
     process.env.OPENAI_API_KEY = "test-key";
     const response = await POST(new Request("http://localhost/api/chat", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question: "Explain this.", search: {} }),
     }));
     expect(response.status).toBe(400);
