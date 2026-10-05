@@ -82,8 +82,8 @@ rather than 1.0000. When one input to a fusion is confidently wrong, the comprom
 the better input alone. Both lexical and hybrid rank *Thompson* below the five cases the page
 displays; neither fails to retrieve it.
 
-The mechanism is structural: RRF fuses chunk ranks, so a case accumulates rank credit once per
-chunk. *Thompson* has 7 chunks; *Bostock* has 101 and *Nassar* 39. A long opinion gets more
+RRF scores chunks independently; case collapse keeps each case's best chunk and does not sum
+its chunk scores. Candidate saturation is the structural limitation. *Thompson* has 7 chunks; *Bostock* has 101 and *Nassar* 39. A long opinion gets more
 chances to occupy a fused slot. A case-level fusion variant was implemented and measured; it
 brought *Thompson* into the Q17 top five but lowered HYBRID Recall@1 and Recall@3 overall, so it
 was rejected.
@@ -125,3 +125,13 @@ See `LOCAL_RETRIEVAL_EVALUATION.md` for the embedding dimension tradeoff, the BM
 sweep, and the 100-cell RRF grid.
 
 No HYBRID_RERANK results exist because reranking was unavailable in the Phase 1 workspace.
+
+## Backend and attribution scope
+
+The tables above remain the measured local-engine and Phase 1 Databricks results. An optional
+Pinecone vector backend is implemented; it retains local BM25, RRF and case collapse. Equality
+of case ranks on a smoke benchmark does not establish exact passage ordering for all queries,
+especially near vector-score ties. No independent generalization or LLM-quality result is
+claimed by selecting Pinecone. Reviewed opinion-section metadata and PDF links change attribution,
+not retrieval scoring or these saved rankings. The guide's trusted runtime context identifies
+the configured backend for the current instance.

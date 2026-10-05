@@ -2,6 +2,8 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { SearchContext } from "@/lib/chat/validation";
 import { MAX_CASE_RESULTS } from "@/lib/search/types";
+import { GUIDE_PASSAGE_CHARS } from "@/lib/limits";
+import { opinionAttribution } from "@/lib/search/opinionLabels";
 
 export type ContextMode = "standard" | "detailed";
 const STANDARD = ["PROJECT_CONTEXT_SUMMARY.md"];
@@ -20,7 +22,8 @@ export function formatSearchContext(search: SearchContext): string {
       rank: result.rank,
       caseName: result.caseName,
       citation: result.citation,
-      passage: result.bestPassage.slice(0, 900),
+      passage: result.bestPassage.slice(0, GUIDE_PASSAGE_CHARS),
+      attribution: opinionAttribution(result.opinionSections),
     })),
   }, null, 2);
 }

@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { assembleIndex, corpusDigest, parseBm25Artifact, parseDocumentTable, parseEmbeddingArtifact, parseManifest, type LocalSearchIndex } from "./artifacts";
 import { SearchIndexError } from "./bm25";
+import { attachOpinionProvenance } from "./opinionProvenance";
 
 export { corpusDigest } from "./artifacts";
 
@@ -39,7 +40,8 @@ export async function readLocalIndex(dir = indexDir()): Promise<LocalSearchIndex
   // document table does not contain.
   const digest = corpusDigest(documents);
   if (manifest.corpusSha256 !== digest) throw new SearchIndexError("Search index artifacts are out of sync: the document table does not match the manifest. Rebuild the index.");
-  return assembleIndex(manifest, documents, parseBm25Artifact(bm25Raw), parseEmbeddingArtifact(embeddingsRaw), digest);
+  const index = assembleIndex(manifest, documents, parseBm25Artifact(bm25Raw), parseEmbeddingArtifact(embeddingsRaw), digest);
+  return { ...index, documents: attachOpinionProvenance(documents, digest) };
 }
 
 // One parse per warm serverless instance. The promise is cached rather than the value so

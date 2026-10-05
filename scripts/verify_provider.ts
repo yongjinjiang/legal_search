@@ -27,7 +27,7 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { SUMMARY_SYSTEM_PROMPT, buildSummaryPrompt } from "@/lib/chat/summary";
-import { GUIDE_SYSTEM_PREAMBLE } from "@/lib/chat/guide";
+import { GUIDE_SYSTEM_PREAMBLE, guideRuntimeContext } from "@/lib/chat/guide";
 import { contextFiles, loadProjectContext } from "@/lib/chat/contextLoader";
 import { embeddingProvider } from "@/lib/embeddings/openai";
 import { llmProvider, resolveReasoningEffort } from "@/lib/llm/openai";
@@ -69,10 +69,10 @@ async function main(): Promise<number> {
   if (!embeddings || !llm) { console.error("OPENAI_API_KEY is required."); return 2; }
 
   const effort = resolveReasoningEffort();
-  const calls = 1 + repeat * 3; // one probe embedding, plus per summary attempt an embedding
+  const calls = 2 + repeat * 3; // probe + prompt retrieval, then an embedding per summary attempt
   console.log(`Live compatibility smoke — NOT a quality evaluation.`);
   console.log(`  model ${llm.model} · effort ${effort} · embeddings ${embeddings.model}@${embeddings.dimensions}`);
-  console.log(`  will make ${calls} billed calls (1 embedding, ${repeat} summary, ${repeat} guide)\n`);
+  console.log(`  will make ${calls} provider calls (${2 + repeat} embeddings, ${repeat} summary, ${repeat} guide)\n`);
 
   const started = Date.now();
 
@@ -93,7 +93,7 @@ async function main(): Promise<number> {
 
   const routes = [
     { label: "summary", system: SUMMARY_SYSTEM_PROMPT, user: summaryPrompt, cap: MAX_SUMMARY_OUTPUT_TOKENS, callCap: SUMMARY_TIMEOUT_MS, ground: true },
-    { label: "guide", system: `${GUIDE_SYSTEM_PREAMBLE}\n\n${guideContext}`, user: GUIDE_QUESTION, cap: MAX_GUIDE_OUTPUT_TOKENS, callCap: CHAT_TIMEOUT_MS, ground: false },
+    { label: "guide", system: `${GUIDE_SYSTEM_PREAMBLE}\n\n${guideContext}\n\n${guideRuntimeContext()}`, user: GUIDE_QUESTION, cap: MAX_GUIDE_OUTPUT_TOKENS, callCap: CHAT_TIMEOUT_MS, ground: false },
   ];
 
   for (const route of routes) {

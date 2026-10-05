@@ -1,12 +1,20 @@
 import { z } from "zod";
 import { MAX_QUERY_LENGTH } from "@/lib/limits";
-import { MAX_CASE_RESULTS, QUERY_TYPES } from "@/lib/search/types";
+import { MAX_CASE_RESULTS, OPINION_TYPES, QUERY_TYPES } from "@/lib/search/types";
+
+const opinionSectionSchema = z.object({
+  type: z.enum(OPINION_TYPES),
+  author: z.string().trim().min(1).max(100).optional(),
+  pageStart: z.number().int().positive(),
+  pageEnd: z.number().int().positive(),
+}).refine((section) => section.pageEnd >= section.pageStart, "Invalid opinion section page range.");
 
 const contextResultSchema = z.object({
   rank: z.number().int().min(1).max(MAX_CASE_RESULTS),
   caseName: z.string().trim().min(1).max(300),
   citation: z.string().trim().min(1).max(200),
   bestPassage: z.string().trim().min(1).max(6000),
+  opinionSections: z.array(opinionSectionSchema).max(8).optional(),
 });
 
 export const searchContextSchema = z.object({

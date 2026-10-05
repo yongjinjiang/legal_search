@@ -50,8 +50,14 @@ This is an engineering decision about matching infrastructure to corpus size, no
 managed vector search. At a million documents the conclusion reverses, and Phase 1's architecture
 becomes the right answer again.
 
-There is no vector database, no always-on search service, no background compute, and no database.
+The default local backend needs no vector database or always-on search service.
 The live site requires no Databricks credentials.
+
+For a corpus that outgrows an in-process scan, an opt-in Pinecone backend (`SEARCH_BACKEND=pinecone`)
+moves only the nearest-neighbour step to a Pinecone serverless index. BM25, fusion, and the document
+table stay local. The 18-query QA run matched case ranks on all 54 query/method pairs, but
+near-tied vector scores changed some passage ordering; exact passage parity is not guaranteed. See
+[Optional Pinecone backend](#optional-pinecone-backend). The public deployment does not use it.
 
 ## Search strategies
 
@@ -201,6 +207,25 @@ Useful options: `--model`, `--dimensions`, `--fold-suffixes`, `--k1`, `--b`, `--
 alternate index into a scratch directory and scoring it with
 `npm run benchmark -- --index <dir>` is how the configuration tables in the evaluation doc were
 produced.
+
+### Optional Pinecone backend
+
+Groundwork for a larger corpus; not used by the public deployment. Add `PINECONE_API_KEY` to
+`.env.local`, then upload the committed vectors (nothing is re-embedded):
+
+```bash
+npm run index:pinecone              # creates the index on first run, then replaces this corpus's namespace
+npm run index:pinecone -- --prune   # also delete namespaces left by earlier corpus builds
+```
+
+The script creates a serverless cosine index (`legal-chunks`, aws/us-east-1 by default, the only
+region on the free plan), waits until every vector is queryable, and checks that Pinecone ranks
+three probe vectors exactly as the local scan does. Then set `SEARCH_BACKEND=pinecone`.
+
+Vectors are stored in a namespace derived from the corpus digest and the embedding model, so after
+a `build:index` that changes either, semantic search refuses to run until `index:pinecone` is re-run
+instead of returning matches from stale vectors. A match whose chunk ID is not in the local document
+table is refused for the same reason. Full text search never calls Pinecone.
 
 ### Rebuild the public corpus from a fresh clone
 
@@ -353,7 +378,22 @@ important of the two.
 `src/app` contains the UI and server endpoints; `src/lib/search` contains the tokenizer, BM25,
 vector similarity, rank fusion, artifact validation, and case collapse; `src/lib/embeddings` and
 `src/lib/llm` hold the provider abstractions; `src/lib/databricks` retains the Phase 1 comparison
-adapter. `scripts` holds the corpus pipeline, the offline index builder, and both evaluation
+adapter; `src/lib/pinecone` holds the optional Pinecone vector backend. `scripts` holds the corpus pipeline, the offline index builder, and both evaluation
 harnesses; `data/search` holds the committed retrieval artifacts; `tests` covers the tokenizer,
 BM25, similarity, fusion, collapse, artifact corruption, validation, provider failures, and
 grounding inputs; `docs` supplies human and chatbot technical context.
+
+### Opinion attribution and guide context
+
+Retrieved passages now display reviewed page-level opinion sections (Court opinion, concurrence,
+dissent, syllabus or front matter), authors, and original PDF links. The catalog in
+`data/metadata/opinion_sections.json` is tied to the corpus digest. Review and update it after a
+corpus change; a digest mismatch leaves the new corpus unclassified. Boundary pages can be mixed,
+and all displayed ranges are PDF pages rather than reporter pinpoint citations. No re-embedding
+or Pinecone upload is required for this metadata-only join.
+
+The optional summary carries those attributions into its prompt and must not treat dissent or
+concurrence as the Court's holding. It remains generated text requiring source verification.
+The guide receives trusted runtime backend configuration plus compact untrusted search context;
+the browser omits full passage arrays before sending a chat request. Zero full-text matches show
+a visible explanation and an action to retry the completed query using semantic search.

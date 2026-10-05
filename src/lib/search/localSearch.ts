@@ -44,6 +44,12 @@ async function embedQuery(query: string, index: LocalSearchIndex, deadlineAt?: n
   }
 }
 
+/** The nearest-neighbour step. Local by default; the optional Pinecone backend swaps in a remote
+ *  query that returns the same rows, so lexical ranking and fusion never depend on where it ran. */
+export type VectorSearch = (index: LocalSearchIndex, queryVector: number[], limit: number, deadlineAt?: number) => Promise<ScoredDoc[]>;
+
+const scanLocally: VectorSearch = async (index, queryVector, limit) => searchEmbeddings(index.embeddings, queryVector, limit);
+
 /**
  * Retrieve chunks from the committed static index.
  *
@@ -51,7 +57,7 @@ async function embedQuery(query: string, index: LocalSearchIndex, deadlineAt?: n
  * the query; the corpus vectors were embedded once, offline. Nothing here contacts a search
  * service, so an idle deployment makes no paid calls at all.
  */
-export async function localSearchChunks(query: string, queryType: QueryType, numResults: number, preloaded?: LocalSearchIndex, deadlineAt?: number): Promise<SearchChunk[]> {
+export async function localSearchChunks(query: string, queryType: QueryType, numResults: number, preloaded?: LocalSearchIndex, deadlineAt?: number, vectorSearch: VectorSearch = scanLocally): Promise<SearchChunk[]> {
   // `preloaded` exists for the offline benchmark, which scores alternate indexes through this
   // exact function rather than through a parallel implementation that could drift from it.
   let index: LocalSearchIndex;
@@ -64,7 +70,7 @@ export async function localSearchChunks(query: string, queryType: QueryType, num
 
   if (queryType === "FULL_TEXT") return toChunks(index, searchBm25(index.bm25, query, numResults));
 
-  const semantic: ScoredDoc[] = searchEmbeddings(index.embeddings, await embedQuery(query, index, deadlineAt), queryType === "ANN" ? numResults : RRF_CANDIDATE_DEPTH);
+  const semantic: ScoredDoc[] = await vectorSearch(index, await embedQuery(query, index, deadlineAt), queryType === "ANN" ? numResults : RRF_CANDIDATE_DEPTH, deadlineAt);
   if (queryType === "ANN") return toChunks(index, semantic);
 
   const lexical = searchBm25(index.bm25, query, RRF_CANDIDATE_DEPTH);

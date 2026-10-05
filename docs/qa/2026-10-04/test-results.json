@@ -1,0 +1,1933 @@
+{
+  "date": "2026-10-04 America/Denver",
+  "automated": {
+    "vitest": 212,
+    "lint": "pass",
+    "typecheck": "pass",
+    "build": "pass",
+    "pythonTests": 11,
+    "corpusValidation": "pass: 8 opinions, 350 pages, 234 chunks",
+    "chunkValidation": "pass; 6 final chunks shorter than preferred 700 tokens"
+  },
+  "pinecone": {
+    "dimension": 1024,
+    "metric": "cosine",
+    "ready": true,
+    "namespace": "corpus-366af0e62748a64d344c7401",
+    "namespaceVectorCount": 234,
+    "totalVectorCount": 234,
+    "apiVersion": "2025-04"
+  },
+  "rankings": [
+    {
+      "queryId": "Q01",
+      "method": "ANN",
+      "embeddingMs": 702,
+      "pineconeMs": 302,
+      "exactChunkParity": false,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "nassar",
+        "burlington_white",
+        "thompson_nas",
+        "crawford_nashville"
+      ],
+      "displayedCaseIds": [
+        "nassar",
+        "burlington_white",
+        "thompson_nas",
+        "crawford_nashville"
+      ],
+      "goldRank": 2,
+      "guidePayloadBytes": 97791,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q01",
+      "method": "FULL_TEXT",
+      "embeddingMs": 0,
+      "pineconeMs": 0,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "burlington_white",
+        "bostock_clayton",
+        "kasten_saint_gobain",
+        "jackson_birmingham",
+        "nassar",
+        "murray_ubs"
+      ],
+      "displayedCaseIds": [
+        "burlington_white",
+        "bostock_clayton",
+        "kasten_saint_gobain",
+        "jackson_birmingham",
+        "nassar"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 103541,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q01",
+      "method": "HYBRID",
+      "embeddingMs": 702,
+      "pineconeMs": 302,
+      "exactChunkParity": false,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "burlington_white",
+        "nassar",
+        "thompson_nas",
+        "bostock_clayton",
+        "kasten_saint_gobain"
+      ],
+      "displayedCaseIds": [
+        "burlington_white",
+        "nassar",
+        "thompson_nas",
+        "bostock_clayton",
+        "kasten_saint_gobain"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 102985,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q02",
+      "method": "ANN",
+      "embeddingMs": 1805,
+      "pineconeMs": 231,
+      "exactChunkParity": false,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "burlington_white",
+        "nassar",
+        "thompson_nas"
+      ],
+      "displayedCaseIds": [
+        "burlington_white",
+        "nassar",
+        "thompson_nas"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 94430,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q02",
+      "method": "FULL_TEXT",
+      "embeddingMs": 0,
+      "pineconeMs": 0,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "burlington_white",
+        "thompson_nas",
+        "crawford_nashville",
+        "nassar"
+      ],
+      "displayedCaseIds": [
+        "burlington_white",
+        "thompson_nas",
+        "crawford_nashville",
+        "nassar"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 102743,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q02",
+      "method": "HYBRID",
+      "embeddingMs": 1805,
+      "pineconeMs": 231,
+      "exactChunkParity": false,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "burlington_white",
+        "nassar",
+        "thompson_nas"
+      ],
+      "displayedCaseIds": [
+        "burlington_white",
+        "nassar",
+        "thompson_nas"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 97642,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q03",
+      "method": "ANN",
+      "embeddingMs": 839,
+      "pineconeMs": 216,
+      "exactChunkParity": false,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "crawford_nashville",
+        "kasten_saint_gobain",
+        "burlington_white",
+        "nassar",
+        "thompson_nas"
+      ],
+      "displayedCaseIds": [
+        "crawford_nashville",
+        "kasten_saint_gobain",
+        "burlington_white",
+        "nassar",
+        "thompson_nas"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 99402,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q03",
+      "method": "FULL_TEXT",
+      "embeddingMs": 0,
+      "pineconeMs": 0,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "crawford_nashville",
+        "burlington_white",
+        "thompson_nas",
+        "murray_ubs",
+        "bostock_clayton"
+      ],
+      "displayedCaseIds": [
+        "crawford_nashville",
+        "burlington_white",
+        "thompson_nas",
+        "murray_ubs",
+        "bostock_clayton"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 108070,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q03",
+      "method": "HYBRID",
+      "embeddingMs": 839,
+      "pineconeMs": 216,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "crawford_nashville",
+        "burlington_white",
+        "thompson_nas",
+        "kasten_saint_gobain",
+        "murray_ubs"
+      ],
+      "displayedCaseIds": [
+        "crawford_nashville",
+        "burlington_white",
+        "thompson_nas",
+        "kasten_saint_gobain",
+        "murray_ubs"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 106398,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q04",
+      "method": "ANN",
+      "embeddingMs": 940,
+      "pineconeMs": 265,
+      "exactChunkParity": false,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "crawford_nashville",
+        "burlington_white",
+        "nassar",
+        "thompson_nas"
+      ],
+      "displayedCaseIds": [
+        "crawford_nashville",
+        "burlington_white",
+        "nassar",
+        "thompson_nas"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 95905,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q04",
+      "method": "FULL_TEXT",
+      "embeddingMs": 0,
+      "pineconeMs": 0,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "crawford_nashville",
+        "burlington_white",
+        "bostock_clayton",
+        "murray_ubs",
+        "kasten_saint_gobain",
+        "nassar"
+      ],
+      "displayedCaseIds": [
+        "crawford_nashville",
+        "burlington_white",
+        "bostock_clayton",
+        "murray_ubs",
+        "kasten_saint_gobain"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 100245,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q04",
+      "method": "HYBRID",
+      "embeddingMs": 940,
+      "pineconeMs": 265,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "crawford_nashville",
+        "burlington_white",
+        "nassar",
+        "kasten_saint_gobain"
+      ],
+      "displayedCaseIds": [
+        "crawford_nashville",
+        "burlington_white",
+        "nassar",
+        "kasten_saint_gobain"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 95789,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q05",
+      "method": "ANN",
+      "embeddingMs": 679,
+      "pineconeMs": 215,
+      "exactChunkParity": false,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "thompson_nas",
+        "nassar",
+        "burlington_white",
+        "jackson_birmingham",
+        "bostock_clayton"
+      ],
+      "displayedCaseIds": [
+        "thompson_nas",
+        "nassar",
+        "burlington_white",
+        "jackson_birmingham",
+        "bostock_clayton"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 99868,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q05",
+      "method": "FULL_TEXT",
+      "embeddingMs": 0,
+      "pineconeMs": 0,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "thompson_nas",
+        "bostock_clayton",
+        "burlington_white",
+        "crawford_nashville"
+      ],
+      "displayedCaseIds": [
+        "thompson_nas",
+        "bostock_clayton",
+        "burlington_white",
+        "crawford_nashville"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 102662,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q05",
+      "method": "HYBRID",
+      "embeddingMs": 679,
+      "pineconeMs": 215,
+      "exactChunkParity": false,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "thompson_nas",
+        "burlington_white",
+        "bostock_clayton",
+        "crawford_nashville",
+        "nassar"
+      ],
+      "displayedCaseIds": [
+        "thompson_nas",
+        "burlington_white",
+        "bostock_clayton",
+        "crawford_nashville",
+        "nassar"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 104087,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q06",
+      "method": "ANN",
+      "embeddingMs": 900,
+      "pineconeMs": 227,
+      "exactChunkParity": false,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "thompson_nas",
+        "burlington_white",
+        "nassar",
+        "crawford_nashville"
+      ],
+      "displayedCaseIds": [
+        "thompson_nas",
+        "burlington_white",
+        "nassar",
+        "crawford_nashville"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 97009,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q06",
+      "method": "FULL_TEXT",
+      "embeddingMs": 0,
+      "pineconeMs": 0,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "thompson_nas",
+        "jackson_birmingham",
+        "burlington_white",
+        "crawford_nashville",
+        "nassar"
+      ],
+      "displayedCaseIds": [
+        "thompson_nas",
+        "jackson_birmingham",
+        "burlington_white",
+        "crawford_nashville",
+        "nassar"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 102160,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q06",
+      "method": "HYBRID",
+      "embeddingMs": 900,
+      "pineconeMs": 227,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "thompson_nas",
+        "burlington_white",
+        "nassar",
+        "crawford_nashville",
+        "jackson_birmingham"
+      ],
+      "displayedCaseIds": [
+        "thompson_nas",
+        "burlington_white",
+        "nassar",
+        "crawford_nashville",
+        "jackson_birmingham"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 99941,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q07",
+      "method": "ANN",
+      "embeddingMs": 698,
+      "pineconeMs": 227,
+      "exactChunkParity": false,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "nassar",
+        "burlington_white"
+      ],
+      "displayedCaseIds": [
+        "nassar",
+        "burlington_white"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 90353,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q07",
+      "method": "FULL_TEXT",
+      "embeddingMs": 0,
+      "pineconeMs": 0,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "nassar",
+        "bostock_clayton"
+      ],
+      "displayedCaseIds": [
+        "nassar",
+        "bostock_clayton"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 92047,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q07",
+      "method": "HYBRID",
+      "embeddingMs": 698,
+      "pineconeMs": 227,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "nassar",
+        "bostock_clayton"
+      ],
+      "displayedCaseIds": [
+        "nassar",
+        "bostock_clayton"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 90175,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q08",
+      "method": "ANN",
+      "embeddingMs": 282,
+      "pineconeMs": 226,
+      "exactChunkParity": false,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "nassar",
+        "burlington_white"
+      ],
+      "displayedCaseIds": [
+        "nassar",
+        "burlington_white"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 88432,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q08",
+      "method": "FULL_TEXT",
+      "embeddingMs": 0,
+      "pineconeMs": 0,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "nassar",
+        "murray_ubs",
+        "bostock_clayton"
+      ],
+      "displayedCaseIds": [
+        "nassar",
+        "murray_ubs",
+        "bostock_clayton"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 94107,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q08",
+      "method": "HYBRID",
+      "embeddingMs": 282,
+      "pineconeMs": 226,
+      "exactChunkParity": false,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "nassar",
+        "burlington_white",
+        "murray_ubs",
+        "bostock_clayton"
+      ],
+      "displayedCaseIds": [
+        "nassar",
+        "burlington_white",
+        "murray_ubs",
+        "bostock_clayton"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 95635,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q09",
+      "method": "ANN",
+      "embeddingMs": 222,
+      "pineconeMs": 181,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "murray_ubs",
+        "crawford_nashville",
+        "burlington_white",
+        "thompson_nas",
+        "nassar"
+      ],
+      "displayedCaseIds": [
+        "murray_ubs",
+        "crawford_nashville",
+        "burlington_white",
+        "thompson_nas",
+        "nassar"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 98958,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q09",
+      "method": "FULL_TEXT",
+      "embeddingMs": 0,
+      "pineconeMs": 0,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "murray_ubs",
+        "kasten_saint_gobain",
+        "crawford_nashville",
+        "jackson_birmingham",
+        "thompson_nas",
+        "nassar"
+      ],
+      "displayedCaseIds": [
+        "murray_ubs",
+        "kasten_saint_gobain",
+        "crawford_nashville",
+        "jackson_birmingham",
+        "thompson_nas"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 99662,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q09",
+      "method": "HYBRID",
+      "embeddingMs": 222,
+      "pineconeMs": 181,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "murray_ubs",
+        "crawford_nashville",
+        "kasten_saint_gobain",
+        "thompson_nas",
+        "burlington_white"
+      ],
+      "displayedCaseIds": [
+        "murray_ubs",
+        "crawford_nashville",
+        "kasten_saint_gobain",
+        "thompson_nas",
+        "burlington_white"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 103537,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q10",
+      "method": "ANN",
+      "embeddingMs": 268,
+      "pineconeMs": 239,
+      "exactChunkParity": false,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "murray_ubs",
+        "nassar",
+        "crawford_nashville",
+        "burlington_white"
+      ],
+      "displayedCaseIds": [
+        "murray_ubs",
+        "nassar",
+        "crawford_nashville",
+        "burlington_white"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 92342,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q10",
+      "method": "FULL_TEXT",
+      "embeddingMs": 0,
+      "pineconeMs": 0,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "murray_ubs",
+        "nassar",
+        "bostock_clayton"
+      ],
+      "displayedCaseIds": [
+        "murray_ubs",
+        "nassar",
+        "bostock_clayton"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 95272,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q10",
+      "method": "HYBRID",
+      "embeddingMs": 268,
+      "pineconeMs": 239,
+      "exactChunkParity": false,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "murray_ubs",
+        "burlington_white",
+        "nassar"
+      ],
+      "displayedCaseIds": [
+        "murray_ubs",
+        "burlington_white",
+        "nassar"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 94287,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q11",
+      "method": "ANN",
+      "embeddingMs": 350,
+      "pineconeMs": 219,
+      "exactChunkParity": false,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "jackson_birmingham",
+        "bostock_clayton",
+        "nassar"
+      ],
+      "displayedCaseIds": [
+        "jackson_birmingham",
+        "bostock_clayton",
+        "nassar"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 93312,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q11",
+      "method": "FULL_TEXT",
+      "embeddingMs": 0,
+      "pineconeMs": 0,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "jackson_birmingham",
+        "bostock_clayton",
+        "nassar",
+        "burlington_white"
+      ],
+      "displayedCaseIds": [
+        "jackson_birmingham",
+        "bostock_clayton",
+        "nassar",
+        "burlington_white"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 99221,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q11",
+      "method": "HYBRID",
+      "embeddingMs": 350,
+      "pineconeMs": 219,
+      "exactChunkParity": false,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "jackson_birmingham",
+        "bostock_clayton",
+        "nassar"
+      ],
+      "displayedCaseIds": [
+        "jackson_birmingham",
+        "bostock_clayton",
+        "nassar"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 92707,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q12",
+      "method": "ANN",
+      "embeddingMs": 267,
+      "pineconeMs": 232,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "jackson_birmingham",
+        "nassar",
+        "bostock_clayton"
+      ],
+      "displayedCaseIds": [
+        "jackson_birmingham",
+        "nassar",
+        "bostock_clayton"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 93631,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q12",
+      "method": "FULL_TEXT",
+      "embeddingMs": 0,
+      "pineconeMs": 0,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "jackson_birmingham",
+        "bostock_clayton",
+        "nassar"
+      ],
+      "displayedCaseIds": [
+        "jackson_birmingham",
+        "bostock_clayton",
+        "nassar"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 92460,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q12",
+      "method": "HYBRID",
+      "embeddingMs": 267,
+      "pineconeMs": 232,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "jackson_birmingham",
+        "bostock_clayton",
+        "nassar"
+      ],
+      "displayedCaseIds": [
+        "jackson_birmingham",
+        "bostock_clayton",
+        "nassar"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 91909,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q13",
+      "method": "ANN",
+      "embeddingMs": 246,
+      "pineconeMs": 223,
+      "exactChunkParity": false,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "kasten_saint_gobain",
+        "crawford_nashville",
+        "nassar"
+      ],
+      "displayedCaseIds": [
+        "kasten_saint_gobain",
+        "crawford_nashville",
+        "nassar"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 87336,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q13",
+      "method": "FULL_TEXT",
+      "embeddingMs": 0,
+      "pineconeMs": 0,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "kasten_saint_gobain",
+        "burlington_white",
+        "jackson_birmingham",
+        "thompson_nas"
+      ],
+      "displayedCaseIds": [
+        "kasten_saint_gobain",
+        "burlington_white",
+        "jackson_birmingham",
+        "thompson_nas"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 100919,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q13",
+      "method": "HYBRID",
+      "embeddingMs": 246,
+      "pineconeMs": 223,
+      "exactChunkParity": false,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "kasten_saint_gobain",
+        "burlington_white",
+        "crawford_nashville",
+        "jackson_birmingham"
+      ],
+      "displayedCaseIds": [
+        "kasten_saint_gobain",
+        "burlington_white",
+        "crawford_nashville",
+        "jackson_birmingham"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 95938,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q14",
+      "method": "ANN",
+      "embeddingMs": 253,
+      "pineconeMs": 228,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "kasten_saint_gobain",
+        "crawford_nashville",
+        "nassar"
+      ],
+      "displayedCaseIds": [
+        "kasten_saint_gobain",
+        "crawford_nashville",
+        "nassar"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 88637,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q14",
+      "method": "FULL_TEXT",
+      "embeddingMs": 0,
+      "pineconeMs": 0,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "kasten_saint_gobain",
+        "jackson_birmingham"
+      ],
+      "displayedCaseIds": [
+        "kasten_saint_gobain",
+        "jackson_birmingham"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 89071,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q14",
+      "method": "HYBRID",
+      "embeddingMs": 253,
+      "pineconeMs": 228,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "kasten_saint_gobain",
+        "crawford_nashville"
+      ],
+      "displayedCaseIds": [
+        "kasten_saint_gobain",
+        "crawford_nashville"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 84449,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q15",
+      "method": "ANN",
+      "embeddingMs": 269,
+      "pineconeMs": 173,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "bostock_clayton"
+      ],
+      "displayedCaseIds": [
+        "bostock_clayton"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 92498,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q15",
+      "method": "FULL_TEXT",
+      "embeddingMs": 0,
+      "pineconeMs": 0,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "bostock_clayton",
+        "thompson_nas"
+      ],
+      "displayedCaseIds": [
+        "bostock_clayton",
+        "thompson_nas"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 97271,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q15",
+      "method": "HYBRID",
+      "embeddingMs": 269,
+      "pineconeMs": 173,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "bostock_clayton"
+      ],
+      "displayedCaseIds": [
+        "bostock_clayton"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 93720,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q16",
+      "method": "ANN",
+      "embeddingMs": 793,
+      "pineconeMs": 207,
+      "exactChunkParity": false,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "bostock_clayton"
+      ],
+      "displayedCaseIds": [
+        "bostock_clayton"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 91737,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q16",
+      "method": "FULL_TEXT",
+      "embeddingMs": 0,
+      "pineconeMs": 0,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "bostock_clayton"
+      ],
+      "displayedCaseIds": [
+        "bostock_clayton"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 93046,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q16",
+      "method": "HYBRID",
+      "embeddingMs": 793,
+      "pineconeMs": 207,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "bostock_clayton"
+      ],
+      "displayedCaseIds": [
+        "bostock_clayton"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 92767,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q17",
+      "method": "ANN",
+      "embeddingMs": 300,
+      "pineconeMs": 199,
+      "exactChunkParity": false,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "nassar",
+        "burlington_white",
+        "thompson_nas"
+      ],
+      "displayedCaseIds": [
+        "nassar",
+        "burlington_white",
+        "thompson_nas"
+      ],
+      "goldRank": 3,
+      "guidePayloadBytes": 91458,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q17",
+      "method": "FULL_TEXT",
+      "embeddingMs": 0,
+      "pineconeMs": 0,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "jackson_birmingham",
+        "murray_ubs",
+        "crawford_nashville",
+        "burlington_white",
+        "bostock_clayton",
+        "nassar",
+        "thompson_nas"
+      ],
+      "displayedCaseIds": [
+        "jackson_birmingham",
+        "murray_ubs",
+        "crawford_nashville",
+        "burlington_white",
+        "bostock_clayton"
+      ],
+      "goldRank": 7,
+      "guidePayloadBytes": 89135,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q17",
+      "method": "HYBRID",
+      "embeddingMs": 300,
+      "pineconeMs": 199,
+      "exactChunkParity": false,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "burlington_white",
+        "nassar",
+        "crawford_nashville",
+        "jackson_birmingham",
+        "murray_ubs",
+        "thompson_nas",
+        "bostock_clayton"
+      ],
+      "displayedCaseIds": [
+        "burlington_white",
+        "nassar",
+        "crawford_nashville",
+        "jackson_birmingham",
+        "murray_ubs"
+      ],
+      "goldRank": 6,
+      "guidePayloadBytes": 90612,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q18",
+      "method": "ANN",
+      "embeddingMs": 327,
+      "pineconeMs": 182,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "crawford_nashville",
+        "kasten_saint_gobain",
+        "nassar",
+        "thompson_nas",
+        "burlington_white"
+      ],
+      "displayedCaseIds": [
+        "crawford_nashville",
+        "kasten_saint_gobain",
+        "nassar",
+        "thompson_nas",
+        "burlington_white"
+      ],
+      "goldRank": 5,
+      "guidePayloadBytes": 98835,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q18",
+      "method": "FULL_TEXT",
+      "embeddingMs": 0,
+      "pineconeMs": 0,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "murray_ubs",
+        "thompson_nas",
+        "burlington_white",
+        "crawford_nashville",
+        "bostock_clayton",
+        "nassar",
+        "kasten_saint_gobain"
+      ],
+      "displayedCaseIds": [
+        "murray_ubs",
+        "thompson_nas",
+        "burlington_white",
+        "crawford_nashville",
+        "bostock_clayton"
+      ],
+      "goldRank": 3,
+      "guidePayloadBytes": 95828,
+      "guidePayloadExceedsLimit": true
+    },
+    {
+      "queryId": "Q18",
+      "method": "HYBRID",
+      "embeddingMs": 327,
+      "pineconeMs": 182,
+      "exactChunkParity": true,
+      "caseParity": true,
+      "matchesSavedBenchmark": true,
+      "rankedCaseIds": [
+        "burlington_white",
+        "nassar",
+        "crawford_nashville",
+        "murray_ubs",
+        "thompson_nas",
+        "kasten_saint_gobain",
+        "bostock_clayton"
+      ],
+      "displayedCaseIds": [
+        "burlington_white",
+        "nassar",
+        "crawford_nashville",
+        "murray_ubs",
+        "thompson_nas"
+      ],
+      "goldRank": 1,
+      "guidePayloadBytes": 92149,
+      "guidePayloadExceedsLimit": true
+    }
+  ],
+  "api": [
+    {
+      "base": "http://127.0.0.1:3000",
+      "path": "/api/health",
+      "status": 200,
+      "ms": 123,
+      "data": {
+        "status": "ok",
+        "backend": "pinecone",
+        "searchMode": "pinecone",
+        "searchConfigured": true,
+        "lexicalConfigured": true,
+        "semanticConfigured": true,
+        "chatConfigured": true,
+        "index": {
+          "rowCount": 234,
+          "embeddingModel": "text-embedding-3-large",
+          "embeddingDimensions": 1024,
+          "generatedAt": "2026-08-28T15:24:10.153Z"
+        }
+      },
+      "headers": {
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      }
+    },
+    {
+      "base": "http://127.0.0.1:3000",
+      "path": "/api/search",
+      "method": "ANN",
+      "status": 200,
+      "ms": 1448,
+      "backend": "pinecone",
+      "mock": false,
+      "cases": [
+        "nassar",
+        "burlington_white"
+      ],
+      "headers": {
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      }
+    },
+    {
+      "base": "http://127.0.0.1:3000",
+      "path": "/api/search",
+      "method": "FULL_TEXT",
+      "status": 200,
+      "ms": 22,
+      "backend": "pinecone",
+      "mock": false,
+      "cases": [
+        "nassar",
+        "bostock_clayton"
+      ],
+      "headers": {
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      }
+    },
+    {
+      "base": "http://127.0.0.1:3000",
+      "path": "/api/chat",
+      "test": "normal search context",
+      "status": 413,
+      "ms": 35,
+      "data": {
+        "error": "Request body is too large."
+      },
+      "headers": {
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      },
+      "payloadBytes": 102984
+    },
+    {
+      "base": "https://legal-search-eight.vercel.app",
+      "path": "/api/health",
+      "status": 200,
+      "ms": 454,
+      "data": {
+        "status": "ok",
+        "backend": "local",
+        "searchMode": "local",
+        "searchConfigured": true,
+        "lexicalConfigured": true,
+        "semanticConfigured": true,
+        "chatConfigured": true,
+        "index": {
+          "rowCount": 234,
+          "embeddingModel": "text-embedding-3-large",
+          "embeddingDimensions": 1024,
+          "generatedAt": "2026-08-28T15:24:10.153Z"
+        }
+      },
+      "headers": {
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      }
+    },
+    {
+      "base": "https://legal-search-eight.vercel.app",
+      "path": "/api/search",
+      "method": "ANN",
+      "status": 200,
+      "ms": 599,
+      "backend": "local",
+      "mock": false,
+      "cases": [
+        "nassar",
+        "burlington_white"
+      ],
+      "headers": {
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      }
+    },
+    {
+      "base": "https://legal-search-eight.vercel.app",
+      "path": "/api/search",
+      "method": "FULL_TEXT",
+      "status": 200,
+      "ms": 206,
+      "backend": "local",
+      "mock": false,
+      "cases": [
+        "nassar",
+        "bostock_clayton"
+      ],
+      "headers": {
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      }
+    },
+    {
+      "base": "https://legal-search-eight.vercel.app",
+      "path": "/api/chat",
+      "test": "normal search context",
+      "status": 413,
+      "ms": 705,
+      "data": {
+        "error": "Request body is too large."
+      },
+      "headers": {
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      },
+      "payloadBytes": 102984
+    },
+    {
+      "base": "http://127.0.0.1:3000",
+      "path": "/api/search",
+      "test": "empty query",
+      "status": 400,
+      "ms": 12,
+      "data": {
+        "error": "Enter a more specific legal question."
+      },
+      "headers": {
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      }
+    },
+    {
+      "base": "http://127.0.0.1:3000",
+      "path": "/api/search",
+      "test": "short query",
+      "status": 400,
+      "ms": 11,
+      "data": {
+        "error": "Enter a more specific legal question."
+      },
+      "headers": {
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      }
+    },
+    {
+      "base": "http://127.0.0.1:3000",
+      "path": "/api/search",
+      "test": "long query",
+      "status": 400,
+      "ms": 6,
+      "data": {
+        "error": "Keep the question under 2,000 characters."
+      },
+      "headers": {
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      }
+    },
+    {
+      "base": "http://127.0.0.1:3000",
+      "path": "/api/search",
+      "test": "invalid method",
+      "status": 400,
+      "ms": 12,
+      "data": {
+        "error": "Invalid option: expected one of \"HYBRID\"|\"ANN\"|\"FULL_TEXT\""
+      },
+      "headers": {
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      }
+    },
+    {
+      "base": "http://127.0.0.1:3000",
+      "path": "/api/search",
+      "test": "negative results",
+      "status": 400,
+      "ms": 4,
+      "data": {
+        "error": "Too small: expected number to be >=1"
+      },
+      "headers": {
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      }
+    },
+    {
+      "base": "http://127.0.0.1:3000",
+      "path": "/api/search",
+      "test": "too many results",
+      "status": 400,
+      "ms": 10,
+      "data": {
+        "error": "Too big: expected number to be <=50"
+      },
+      "headers": {
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      }
+    },
+    {
+      "base": "http://127.0.0.1:3000",
+      "path": "/api/search",
+      "test": "malformed JSON",
+      "status": 400,
+      "ms": 5,
+      "data": {
+        "error": "Invalid search request."
+      },
+      "headers": {
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      }
+    },
+    {
+      "base": "http://127.0.0.1:3000",
+      "path": "/api/search",
+      "test": "wrong content type",
+      "status": 415,
+      "ms": 5,
+      "data": {
+        "error": "Requests must be application/json."
+      },
+      "headers": {
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      }
+    },
+    {
+      "base": "http://127.0.0.1:3000",
+      "path": "/api/search",
+      "test": "cross site",
+      "status": 403,
+      "ms": 5,
+      "data": {
+        "error": "Cross-site requests are not accepted."
+      },
+      "headers": {
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      }
+    },
+    {
+      "base": "http://127.0.0.1:3000",
+      "path": "/api/search",
+      "test": "oversize body",
+      "status": 413,
+      "ms": 6,
+      "data": {
+        "error": "Request body is too large."
+      },
+      "headers": {
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      }
+    },
+    {
+      "base": "http://127.0.0.1:3000",
+      "path": "/api/search",
+      "test": "unmatched words",
+      "status": 200,
+      "ms": 5,
+      "data": {
+        "results": [],
+        "mock": false,
+        "backend": "pinecone"
+      },
+      "headers": {
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      }
+    },
+    {
+      "base": "http://127.0.0.1:3000",
+      "path": "/api/search",
+      "test": "punctuation query",
+      "status": 200,
+      "ms": 10,
+      "data": {
+        "results": [],
+        "mock": false,
+        "backend": "pinecone"
+      },
+      "headers": {
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "name": "combined Pinecone timeout",
+      "configuredMs": 100,
+      "actualMs": 143,
+      "outcome": "succeeded after combined timeout"
+    }
+  ],
+  "drill": {
+    "drill": [
+      {
+        "queryId": "Q01",
+        "differences": [
+          {
+            "rank": 16,
+            "localId": "crawford_nashville__0002",
+            "remoteId": "nassar__0005",
+            "localScore": 0.619134563311761,
+            "remoteScore": 0.618535399,
+            "identicalText": false,
+            "remoteLocalScore": 0.618935049624363
+          },
+          {
+            "rank": 17,
+            "localId": "nassar__0005",
+            "remoteId": "crawford_nashville__0002",
+            "localScore": 0.618935049624363,
+            "remoteScore": 0.618444741,
+            "identicalText": false,
+            "remoteLocalScore": 0.619134563311761
+          },
+          {
+            "rank": 28,
+            "localId": "burlington_white__0015",
+            "remoteId": "nassar__0003",
+            "localScore": 0.6068407277071929,
+            "remoteScore": 0.606669724,
+            "identicalText": false,
+            "remoteLocalScore": 0.6064840362844116
+          },
+          {
+            "rank": 29,
+            "localId": "nassar__0003",
+            "remoteId": "burlington_white__0015",
+            "localScore": 0.6064840362844116,
+            "remoteScore": 0.606479883,
+            "identicalText": false,
+            "remoteLocalScore": 0.6068407277071929
+          }
+        ]
+      },
+      {
+        "queryId": "Q17",
+        "differences": [
+          {
+            "rank": 4,
+            "localId": "nassar__0024",
+            "remoteId": "thompson_nas__0003",
+            "localScore": 0.6513829156719162,
+            "remoteScore": 0.651340365,
+            "identicalText": false,
+            "remoteLocalScore": 0.6512944723382206
+          },
+          {
+            "rank": 5,
+            "localId": "thompson_nas__0003",
+            "remoteId": "nassar__0024",
+            "localScore": 0.6512944723382206,
+            "remoteScore": 0.651165843,
+            "identicalText": false,
+            "remoteLocalScore": 0.6513829156719162
+          },
+          {
+            "rank": 10,
+            "localId": "nassar__0032",
+            "remoteId": "nassar__0014",
+            "localScore": 0.6238366196314855,
+            "remoteScore": 0.624073744,
+            "identicalText": false,
+            "remoteLocalScore": 0.6236903106648779
+          },
+          {
+            "rank": 12,
+            "localId": "nassar__0014",
+            "remoteId": "nassar__0032",
+            "localScore": 0.6236903106648779,
+            "remoteScore": 0.623229623,
+            "identicalText": false,
+            "remoteLocalScore": 0.6238366196314855
+          },
+          {
+            "rank": 17,
+            "localId": "nassar__0027",
+            "remoteId": "burlington_white__0004",
+            "localScore": 0.6157641724593854,
+            "remoteScore": 0.616204798,
+            "identicalText": false,
+            "remoteLocalScore": 0.6157363763461163
+          },
+          {
+            "rank": 18,
+            "localId": "burlington_white__0004",
+            "remoteId": "nassar__0027",
+            "localScore": 0.6157363763461163,
+            "remoteScore": 0.615259528,
+            "identicalText": false,
+            "remoteLocalScore": 0.6157641724593854
+          },
+          {
+            "rank": 26,
+            "localId": "crawford_nashville__0010",
+            "remoteId": "nassar__0003",
+            "localScore": 0.6061306973595498,
+            "remoteScore": 0.605849266,
+            "identicalText": false,
+            "remoteLocalScore": 0.6053702620748578
+          },
+          {
+            "rank": 27,
+            "localId": "nassar__0003",
+            "remoteId": "crawford_nashville__0010",
+            "localScore": 0.6053702620748578,
+            "remoteScore": 0.605327487,
+            "identicalText": false,
+            "remoteLocalScore": 0.6061306973595498
+          }
+        ]
+      }
+    ],
+    "apiVersion": {
+      "requested": "2025-04",
+      "status": 200,
+      "responseHeaders": {
+        "x-pinecone-api-version": "2025-04"
+      }
+    }
+  },
+  "browser": {
+    "examples": [
+      {
+        "label": "Internal investigation",
+        "cases": [
+          "Crawford v. Metropolitan Government of Nashville and Davidson County",
+          "Burlington Northern & Santa Fe Railway Co. v. White",
+          "Thompson v. North American Stainless, LP",
+          "Kasten v. Saint-Gobain Performance Plastics Corp.",
+          "Murray v. UBS Securities, LLC"
+        ],
+        "query": "A worker never filed her own harassment complaint, but during the employer's internal investigation she answered questions and described inappropriate conduct. She was later fired. Can that participation still be protected from retaliation?",
+        "summaryVisible": false
+      },
+      {
+        "label": "Third-party retaliation",
+        "cases": [
+          "Burlington Northern & Santa Fe Railway Co. v. White",
+          "University of Texas Southwestern Medical Center v. Nassar",
+          "Crawford v. Metropolitan Government of Nashville and Davidson County",
+          "Jackson v. Birmingham Board of Education",
+          "Murray v. UBS Securities, LLC"
+        ],
+        "query": "An employee complains about discrimination and soon afterward someone close to that employee suffers an adverse employment action. Which Supreme Court cases are most relevant to evaluating retaliation?",
+        "summaryVisible": false
+      },
+      {
+        "label": "But-for causation",
+        "cases": [
+          "University of Texas Southwestern Medical Center v. Nassar",
+          "Bostock v. Clayton County"
+        ],
+        "query": "Does a plaintiff bringing a Title VII retaliation claim have to prove but-for causation?",
+        "summaryVisible": false
+      },
+      {
+        "label": "Broad retaliation search",
+        "cases": [
+          "Burlington Northern & Santa Fe Railway Co. v. White",
+          "University of Texas Southwestern Medical Center v. Nassar",
+          "Crawford v. Metropolitan Government of Nashville and Davidson County",
+          "Murray v. UBS Securities, LLC",
+          "Thompson v. North American Stainless, LP"
+        ],
+        "query": "A worker says the employer punished them after they raised a workplace concern, but the client has not yet identified the statute, the protected activity, or the type of adverse action. Find potentially relevant Supreme Court retaliation precedents.",
+        "summaryVisible": false
+      }
+    ],
+    "localGuide": "GuideShort answer: No — Pinecone is not used.\n\nDetails from the project documentation\n- The repository does not include or rely on a vector database like Pinecone. The production/demo deployment has no vector DB, no always‑on search service, and no database.\n- Vectors are stored as a static artifact: a base64-encoded Float32 embedding matrix committed to the repo and loaded into the application at runtime.\n- At query time the app makes one embedding request for the query (model: text-embedding-3-large, 1024 dims), then computes cosine similarity by a linear scan against the 234 precomputed, L2‑normalised corpus vectors (dot product). Retrieval is therefore local/in‑process, not backed by an external ANN service.\n\nLimitations / notes\n- The docs do not mention Pinecone at all; they explicitly describe the move away from Databricks AI Search and say there is “no vector database.” If you need a deployment that uses Pinecone, that would be a change from the current architecture and is not implemented here.",
+    "publicDetailedGuide": "GuideShort answer\n- The public deployment does not use Pinecone (or any other external vector database). Phase 2 intentionally removed the managed search service and runs retrieval entirely inside the app over static, committed artifacts.\n\nArchitecture (what is running today)\n- Two-phase history:\n  - Phase 1: corpus stored in a Delta table and indexed in Databricks AI Search (managed ANN + lexical + hybrid). That proved useful for building baselines but was costly to host continuously.\n  - Phase 2 (current public deployment): retrieval moved into the application to avoid always‑on billing. Nothing is indexed or served by an external vector DB at runtime.\n- Static, committed artifacts (built offline and checked at load):\n  - documents.json — canonical ordered chunks with metadata and text.\n  - bm25_index.json — postings, doc lengths, BM25 config (k1=1.2, b=0.75).\n  - embeddings.json — base64 Float32 matrix (234 × 1024), L2-normalised.\n  - index_manifest.json — SHA-256 digests, model/dimension, tokenizer and config info.\n- Retrieval methods:\n  - FULL_TEXT: local BM25 query against the precomputed index (no network calls, no API key).\n  - ANN: one embedding request for the query, then a linear cosine similarity scan (dot product) against all 234 stored vectors.\n  - HYBRID: one embedding request + BM25, then Reciprocal Rank Fusion (RRF, k=60, depth=30) fusing ranks (not raw scores).\n- Presentation:\n  - The UI retrieves 20 candidate chunks, groups by case_id and shows each case once using the highest-ranked passage (collapse after retrieval).\n- Security/cost:\n  - No always-on search endpoint, no background embedding at query time. A semantic/hybrid search makes exactly one embedding call (~50 tokens). While idle the site costs nothing in provider credits.\n\nScaling tradeoffs and why the design was chosen\n- Linear scan is cheap and simple at this corpus size: 234 vectors × 1024 dims is about a 958 KB matrix and a full scan is sub‑millisecond. At that scale an ANN index or hosted vector DB is an operational liability (continuous billing) with little benefit.\n- But linear scan does not scale indefinitely. At larger corpus sizes you must consider:\n  - approximate nearest-neighbour indexes (FAISS, HNSW, etc.) or hosted services for sub-linear query latency,\n  - partitioning / filtering (jurisdiction, date, statute) to reduce candidate sets,\n  - sharded lexical indexes, caching and per-slice evaluation,\n  - two-stage retrieval and reranking (cross-encoder) before case collapse,\n  - rate limiting, access control, observability, and other production operational requirements.\n- The documentation explicitly says: the current architecture is matched to 234 chunks; growing by two or three orders of magnitude would invalidate the linear-scan choice and reintroduce the need for an approximate index or managed service.\n\nWhy some errors persist (practical limitations)\n- Case collapse runs after retrieval, so if a case never enters the candidate chunk set it cannot be recovered by collapse. This interacts badly with RRF on chunk ranks: long opinions (many chunks) get more opportunities to accumulate fused rank credit, biasing hybrid results against short opinions (this explains the Q17 behavior).\n- The artifacts are positional and guarded by cross-checked digests; if model/dimension or manifest mismatches occur, the runtime refuses to serve rather than silently misattribute vectors.\n- Reranking results were not available in Phase 1 because reranking was not enabled in that workspace; no reranker has been run in production.\n\nAbout Pinecone specifically\n- Pinecone (and other vector stores such as FAISS, pgvector, Qdrant, Elasticsearch) were considered during design, but the docs explicitly say these were judged unnecessary for a 234‑chunk corpus. Pinecone is not implemented and is not enabled on this public deployment.\n\nIf you want next steps\n- The documentation lists candidate next experiments for scaling and robustness: deeper retrieval, candidate diversification, two-stage retrieval, cross-encoder reranking before case collapse, metadata filters, and partitioning. These are future directions, not implemented in the current public demo.\n\nIf you want, I can:\n- Walk through the exact retrieval flow for a semantic query step-by-step, or\n- Explain how the current artifacts (manifest + embeddings.json) are validated at load.",
+    "responsiveSizes": [
+      {
+        "width": 390,
+        "height": 844,
+        "pageWidth": 390
+      },
+      {
+        "width": 1440,
+        "height": 1000,
+        "pageWidth": 1440
+      }
+    ],
+    "summaryQ07Evidence": "q07-summary.json",
+    "summaryQ07Result": "生成成功；回答基于提供的多数意见给出肯定回答，但将部分异议段落归为 Court reasoning，未区分意见类型。",
+    "liveSummary": "Q01 与 Q07 成功",
+    "localPineconeSummary": "Q02 成功，服务端 9.0 秒 HTTP 200",
+    "consoleErrors": []
+  },
+  "slimPayloadProof": {
+    "test": "schema-sized guide payload using existing route without app changes",
+    "payloadBytes": 5589,
+    "status": 200,
+    "ms": 7229,
+    "data": {
+      "answer": "Evidence (what the retrieval state and project docs show)\n- The FULL_TEXT ranking displayed \"Burlington Northern & Santa Fe Railway Co. v. White\" as rank 1 and the retrieved passage discusses the antiretaliation provision and distinguishes its scope from the antidiscrimination provision (words like “antiretaliation,” “status as an employee,” and related language appear in the passage).\n- Per the project documentation, FULL_TEXT uses a local BM25 index (k1 = 1.2, b = 0.75) and returns the top lexical matches with no network calls. The UI shows one highest-ranked passage per case.\n\nInference (plausible explanation consistent with the evidence)\n- Burlington ranked first because its text contains strong lexical matches to the query’s topic (retaliation, reassignment/suspension, scope of antiretaliation law), so BM25 gave it the highest full-text score.\n- The UI’s case-level deduplication preserved Burlington’s highest-scoring passage as that case’s displayed result.\n\nLimitations and caveats\n- I treat the quoted retrieval state as untrusted displayed data (as the project requires) and base the above only on that display plus the project documentation.\n- I cannot inspect internal BM25 score values or token-level matches because those numbers are not provided in the docs. If you want precise scoring evidence, the system would need to reveal the BM25 scores or matching terms."
+    }
+  },
+  "findings": [
+    {
+      "priority": "P1",
+      "title": "正常检索后技术问答返回 HTTP 413",
+      "observed": "公开网站与本地 Pinecone 版本都复现。54 组基准检索生成的问答请求均为 84,449–108,070 字节，超过 65,536 字节限制。Q01 正常 UI 请求约 102,984 字节。",
+      "source": "src/components/Explorer.tsx:36",
+      "recommendation": "前端只发送 chatRequestSchema 所需字段，最佳片段截断至 900 字符；去除 passages、重复全文等字段。保留请求大小限制，并加浏览器搜索→问答端到端回归。",
+      "verifiedFixDirection": "相同现有 API 接收 5,589 字节精简上下文，返回 200，无需更改后端或放宽限制。"
+    },
+    {
+      "priority": "P1",
+      "title": "检索结果缺少意见类型，摘要有混淆异议意见的风险",
+      "observed": "公开 Q07 Hybrid 首条 Nassar 最佳段落来自 pages 46–48，正文明确包含 Ginsburg, J., dissenting，但结果卡没有意见类型。此前 Q01 摘要使用 Nassar pages 31–32 的异议意见而未标明类型。",
+      "source": "src/lib/search/types.ts:7",
+      "recommendation": "在语料、分块、结果卡和摘要输入中加入 opinionType、author、PDF 页码与官方报告页码；区分多数意见、协同意见、异议意见及 syllabus。添加原文 PDF 页码链接，并验证模型对意见类型的归属。"
+    },
+    {
+      "priority": "P2",
+      "title": "启用 Pinecone 后技术指南仍否认其已实现",
+      "observed": "本地健康接口 backend=pinecone，真实向量检索成功，但 Standard 指南回答 repository does not include ... Pinecone。",
+      "source": "src/lib/chat/contextLoader.ts:7",
+      "recommendation": "更新实际被指南加载的四份文档，向服务器组装的指南上下文提供可信 runtime backend。同步公开说明与本地实现，明确可选实现和公开部署配置。"
+    },
+    {
+      "priority": "P2",
+      "title": "全文零匹配搜索缺少反馈",
+      "observed": "390 像素视口输入 zzqxxyy vvvnnn，API 200 results=[]，界面没有零结果提示。",
+      "source": "src/components/Explorer.tsx:64",
+      "recommendation": "增加零结果说明、修改关键词或尝试语义搜索的建议，并为加载、错误与结果数量增加可访问状态播报。"
+    },
+    {
+      "priority": "P2",
+      "title": "Pinecone 冷启动两步请求没有共享时间预算",
+      "observed": "queryVectors 给 resolveHost 与 query 各传同一个完整 timeoutMs。模拟每步 70ms，配置总额度 100ms，实际 143ms 后仍成功。",
+      "source": "src/lib/pinecone/client.ts:90",
+      "recommendation": "为 host discovery 和 vector query 使用绝对截止时间，并在第二步前重新计算剩余预算；加入冷启动总预算回归。"
+    },
+    {
+      "priority": "P2",
+      "title": "排名完全一致的表述过强",
+      "observed": "54 组案例排序均与本地和既存 benchmark 一致；33 组片段顺序完全一致，21 组出现细微次序差异，差异不是重复文本。",
+      "source": "README.md:58",
+      "recommendation": "将声明限定为本次基准的案例排名一致。使用检索质量、候选覆盖率与有容差的 score 检查作为验收，不用少量自检向量的完全相同顺序证明所有真实查询。"
+    }
+  ],
+  "recommendations": [
+    "演示优先：先修 413 与文档漂移，加入搜索后问答的浏览器回归及 CI。",
+    "评估优先：新增未参与调参的留出查询集、语料范围外查询及同义改写，明确 18 条目前是开发集。",
+    "可解释性：一键对比三种模式、展示实际 BM25/向量/RRF 排名贡献，并允许查看第 6–8 个独立案例；Q17 的 Thompson 在 Hybrid 排第 6、全文第 7、语义第 3。",
+    "运维：保留轻量 health，但将 configured 与实际远端 readiness 区分；增加鉴权的按需 Pinecone 探针。",
+    "运维：重新索引应写入新 namespace 并验证后切换，以免 deleteAll 后上传失败造成运行中的索引缺失。",
+    "维护：当前 API 2025-04 实测仍返回 200；按 Pinecone 版本维护政策规划升级，而不是将旧版本认定为本次故障原因。",
+    "求职说明：更新 PROJECT_DESCRIPTION 的 150 tests 数字；描述 RRF 在 chunk 层融合、case 按最佳 passage 去重，避免被理解成 case 对所有 chunk 分数求和。"
+  ],
+  "externalReferences": [
+    {
+      "title": "Pinecone API versioning",
+      "url": "https://docs.pinecone.io/reference/api/versioning"
+    },
+    {
+      "title": "Pinecone production checklist",
+      "url": "https://docs.pinecone.io/guides/operations/moving-to-production"
+    }
+  ],
+  "scope": {
+    "appSourceChanged": false,
+    "remoteIndexesChanged": false,
+    "deploymentChanged": false,
+    "notTested": [
+      "并发压力及容量极限",
+      "远端真实故障或配额耗尽",
+      "跨浏览器兼容性",
+      "个性化法律结论正确性"
+    ]
+  }
+}

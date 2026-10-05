@@ -1,0 +1,86 @@
+{
+  "corpusSha256": "c531c885148da0db702eeefce77d8a509e995a674847d5e99b85fda7fcf39aec",
+  "pageNumbering": "1-based PDF pages, including syllabus and counsel pages",
+  "reviewNote": "Reviewed against the extracted source PDFs. Ranges overlap when sections share a PDF page. These are page-level section boundaries, not sentence-level attribution. Bostock's Alito dissent range includes its appendix.",
+  "cases": {
+    "burlington_white": {
+      "sourceUrl": "https://tile.loc.gov/storage-services/service/ll/usrep/usrep548/usrep548053/usrep548053.pdf",
+      "pageCount": 28,
+      "sections": [
+        { "type": "syllabus", "pageStart": 1, "pageEnd": 3 },
+        { "type": "front_matter", "pageStart": 3, "pageEnd": 4 },
+        { "type": "majority", "author": "Breyer", "pageStart": 4, "pageEnd": 21 },
+        { "type": "concurrence", "author": "Alito", "pageStart": 21, "pageEnd": 28 }
+      ]
+    },
+    "crawford_nashville": {
+      "sourceUrl": "https://tile.loc.gov/storage-services/service/ll/usrep/usrep555/usrep555271/usrep555271.pdf",
+      "pageCount": 14,
+      "sections": [
+        { "type": "syllabus", "pageStart": 1, "pageEnd": 2 },
+        { "type": "front_matter", "pageStart": 2, "pageEnd": 3 },
+        { "type": "majority", "author": "Souter", "pageStart": 3, "pageEnd": 10 },
+        { "type": "concurrence", "author": "Alito", "pageStart": 10, "pageEnd": 14 }
+      ]
+    },
+    "thompson_nas": {
+      "sourceUrl": "https://tile.loc.gov/storage-services/service/ll/usrep/usrep562/usrep562170/usrep562170.pdf",
+      "pageCount": 10,
+      "sections": [
+        { "type": "syllabus", "pageStart": 1, "pageEnd": 2 },
+        { "type": "front_matter", "pageStart": 2, "pageEnd": 3 },
+        { "type": "majority", "author": "Scalia", "pageStart": 3, "pageEnd": 9 },
+        { "type": "concurrence", "author": "Ginsburg", "pageStart": 10, "pageEnd": 10 }
+      ]
+    },
+    "nassar": {
+      "sourceUrl": "https://tile.loc.gov/storage-services/service/ll/usrep/usrep570/usrep570338/usrep570338.pdf",
+      "pageCount": 49,
+      "sections": [
+        { "type": "syllabus", "pageStart": 1, "pageEnd": 3 },
+        { "type": "front_matter", "pageStart": 3, "pageEnd": 5 },
+        { "type": "majority", "author": "Kennedy", "pageStart": 5, "pageEnd": 26 },
+        { "type": "dissent", "author": "Ginsburg", "pageStart": 26, "pageEnd": 49 }
+      ]
+    },
+    "murray_ubs": {
+      "sourceUrl": "https://www.supremecourt.gov/opinions/23pdf/22-660_7648.pdf",
+      "pageCount": 21,
+      "sections": [
+        { "type": "syllabus", "pageStart": 1, "pageEnd": 3 },
+        { "type": "majority", "author": "Sotomayor", "pageStart": 4, "pageEnd": 18 },
+        { "type": "concurrence", "author": "Alito", "pageStart": 19, "pageEnd": 21 }
+      ]
+    },
+    "jackson_birmingham": {
+      "sourceUrl": "https://tile.loc.gov/storage-services/service/ll/usrep/usrep544/usrep544167/usrep544167.pdf",
+      "pageCount": 30,
+      "sections": [
+        { "type": "syllabus", "pageStart": 1, "pageEnd": 3 },
+        { "type": "front_matter", "pageStart": 3, "pageEnd": 5 },
+        { "type": "majority", "author": "O’Connor", "pageStart": 5, "pageEnd": 18 },
+        { "type": "dissent", "author": "Thomas", "pageStart": 18, "pageEnd": 30 }
+      ]
+    },
+    "kasten_saint_gobain": {
+      "sourceUrl": "https://tile.loc.gov/storage-services/service/ll/usrep/usrep563/usrep563001/usrep563001.pdf",
+      "pageCount": 26,
+      "sections": [
+        { "type": "syllabus", "pageStart": 1, "pageEnd": 3 },
+        { "type": "front_matter", "pageStart": 3, "pageEnd": 4 },
+        { "type": "majority", "author": "Breyer", "pageStart": 4, "pageEnd": 17 },
+        { "type": "dissent", "author": "Scalia", "pageStart": 17, "pageEnd": 26 }
+      ]
+    },
+    "bostock_clayton": {
+      "sourceUrl": "https://www.supremecourt.gov/opinions/19pdf/17-1618_hfci.pdf",
+      "pageCount": 172,
+      "sections": [
+        { "type": "syllabus", "pageStart": 1, "pageEnd": 4 },
+        { "type": "majority", "author": "Gorsuch", "pageStart": 5, "pageEnd": 37 },
+        { "type": "dissent", "author": "Alito", "pageStart": 38, "pageEnd": 144 },
+        { "type": "dissent", "author": "Kavanaugh", "pageStart": 145, "pageEnd": 172 }
+      ]
+    }
+  }
+}

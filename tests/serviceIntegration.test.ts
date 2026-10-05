@@ -90,6 +90,22 @@ describe.sequential("service integration", () => {
     expect(body.messages[1].content).toContain("Injected Case");
   });
 
+  it.each(["local", "pinecone", "databricks"])("supplies the actual %s backend as trusted configuration without credentials", async (backend) => {
+    process.env.SEARCH_BACKEND = backend;
+    process.env.MOCK_SEARCH = "false";
+    process.env.MOCK_DATABRICKS = "false";
+    process.env.OPENAI_API_KEY = "test-key";
+    process.env.PINECONE_API_KEY = "private-pinecone-key";
+    const provider = vi.fn().mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: "Answer" } }] }), { status: 200 }));
+    vi.stubGlobal("fetch", provider);
+    await answerProjectQuestion("Which backend is active?", "standard");
+    const body = JSON.parse(String(provider.mock.calls[0][1].body)) as { messages: Array<{ content: string }> };
+    expect(body.messages[0].content).toContain(`Configured search backend: ${backend}`);
+    expect(body.messages[0].content).toContain("Mock retrieval enabled: false");
+    expect(body.messages[0].content).toContain("not a live availability check");
+    expect(JSON.stringify(body)).not.toContain("private-pinecone-key");
+  });
+
   it("rejects a malformed search body as a client error", async () => {
     const response = await search(new Request("http://localhost/api/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{not-json" }));
     // A body the client can never fix by retrying must not be reported as a server failure.

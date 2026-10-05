@@ -10,6 +10,9 @@ export const DEFAULT_CHUNK_RESULTS = 20;
 
 /** Embeddings. One query embedding per ANN or HYBRID search; FULL_TEXT makes no network call. */
 export const EMBEDDING_TIMEOUT_MS = 10_000;
+/** Optional Pinecone backend: one vector query per ANN or HYBRID search, after the embedding.
+ *  The first query on a cold instance also resolves the index host, under the same allowance. */
+export const PINECONE_TIMEOUT_MS = 8_000;
 /** Offline builder only: the embeddings endpoint accepts batched inputs, so the 234-chunk corpus
  *  is built in a handful of requests rather than 234. Sized against tokens, not documents: at
  *  ~900 tokens per chunk a batch of 64 is ~60k tokens in one request, which exceeds the
@@ -22,6 +25,8 @@ export const EMBEDDING_BUILD_RETRY_DELAYS_MS = [2_000, 6_000, 18_000, 45_000];
 
 /** Technical guide. */
 export const MAX_QUESTION_LENGTH = 3000;
+// Applied before the browser serialises a chat request as well as at prompt assembly.
+export const GUIDE_PASSAGE_CHARS = 900;
 
 /** Wall-clock allowance for one request on an LLM route, shared across its steps. Both routes
  *  declare maxDuration = 60, so this leaves five seconds for loading the index, building the

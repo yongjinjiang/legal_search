@@ -20,11 +20,11 @@ Phase 2 moved retrieval into the application. The reason was cost shape, not a f
 prototype: an AI Search endpoint bills for provisioned serving time whether or not anyone queries
 it, and this public demonstration corpus is 234 chunks. A linear similarity scan over 234 vectors
 is sub-millisecond, so a continuously provisioned search service was paying rent to answer a
-handful of queries a day. The production demo now uses precomputed embeddings, local BM25, local
-vector similarity, and Reciprocal Rank Fusion, which reduces idle infrastructure cost to
-effectively zero while preserving the retrieval experiment.
+handful of queries a day. The default deployment uses precomputed embeddings, local BM25, local vector similarity, and
+Reciprocal Rank Fusion, avoiding provisioned search capacity for this small corpus. An optional
+Pinecone backend is now implemented for comparing remote vector retrieval and future growth.
 
-## How production retrieval works now
+## Default and optional retrieval backends
 
 Four static artifacts are built offline and committed to the repository: a document table, a BM25
 index, a base64 Float32 embedding matrix, and a manifest recording the source file hash, corpus
@@ -56,12 +56,29 @@ highest-ranked passage, and assigns unique case ranks; extra passages remain exp
 deduplicates what is displayed rather than diversifying what is retrieved: a long opinion can
 still fill the candidate chunks and exclude a shorter case before collapse runs.
 
-There is no vector database, no always-on search service, no background compute, and no database.
-The public site requires no Databricks credentials of any kind.
+`SEARCH_BACKEND=local` is the default. `SEARCH_BACKEND=pinecone` replaces only the vector ranking
+step with a Pinecone serverless cosine query. BM25, the document table, RRF, and case collapse
+still run in the application. FULL_TEXT stays entirely local in either mode.
+`scripts/index_pinecone.ts` uploads the committed vectors to a namespace derived from the corpus
+digest and embedding configuration; stale namespaces and unknown chunk IDs are refused. This is
+an implemented option, not a planned feature. `databricks` remains an optional Phase 1 comparison
+adapter. The guide receives this server instance's actual backend and mock setting as trusted
+runtime context; configuration does not prove that a remote service is currently reachable.
+
+The local default needs no vector database or always-on search endpoint. The optional Pinecone
+mode needs Pinecone configuration and credentials. Neither local nor Pinecone needs Databricks
+credentials.
+
+A reviewed PDF section catalog labels retrieved passages as Court opinion, concurrence, dissent,
+syllabus, or front matter, including author and a link to the source PDF. All page ranges use
+1-based PDF pages, not reporter page numbers. A chunk spanning sections is labelled mixed;
+section boundaries can share a page. The catalog is tied to the reviewed corpus digest and joins
+metadata without changing chunk text, embeddings, or ranking. Unreviewed corpora are unclassified.
+These are page-level labels, not sentence-level attribution.
 
 ## Cost behaviour
 
-Nothing bills while the site is idle. A full-text search costs nothing beyond CPU. A semantic or
+The local default has no provisioned search capacity to bill while idle. Pinecone costs depend on its configured service plan and usage. A full-text search costs nothing beyond CPU. A semantic or
 hybrid search costs one embedding request, roughly 50 tokens. The technical guide and the optional
 research summary are the only paths that reach a language model, and the research summary runs
 only when a visitor clicks the button — searching never invokes one.
@@ -95,8 +112,9 @@ The technical guide answers from this project's documentation rather than genera
 the opinions themselves; it uses this summary in standard mode and adds the technical deep dive,
 evaluation results, and future directions in detailed mode. Context is assembled server-side, and
 the endpoint accepts a single question rather than a caller-supplied transcript, so assistant
-turns cannot be forged. When a search is on screen, its state is schema-validated, trimmed to the
-five highest-ranked cases, and supplied inside explicit untrusted delimiters that the model must
+turns cannot be forged. When a search is on screen, the browser sends only the five highest-ranked case names, citations, section labels, and
+900 characters of each best passage; full passage lists are omitted before HTTP serialization.
+This compact state is schema-validated and supplied inside explicit untrusted delimiters that the model must
 treat as quoted data and never as instructions. Credentials stay server-side, prompts are not
 persisted, and the guide has no tools or arbitrary execution.
 
@@ -104,3 +122,11 @@ Databricks reranking was planned in Phase 1 but the workspace returned `InvalidP
 Reranking is not yet enabled for this workspace.` No reranker results exist. Future work includes
 reranking, metadata filters, richer corpora, expert judgments, feedback-driven learning, and
 citation-grounded answer generation.
+
+The optional research summary re-runs retrieval server-side, selects at most eight passages
+round-robin across at most five cases, and generates only after an explicit click. Its prompt
+carries section attribution, numbered passage IDs, and PDF page ranges that must be cited separately without merging. Dissent and concurrence must be attributed to
+their authors; a syllabus or dissent alone cannot verify the Court's holding. Mixed or unknown
+sections require explicit uncertainty. These controls improve grounding but do not replace
+verification against the original PDF. A successful search with no matches has a visible empty
+state with query suggestions and, for full text, an action to retry using semantic search.

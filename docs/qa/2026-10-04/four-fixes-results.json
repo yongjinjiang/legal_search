@@ -1,0 +1,175 @@
+{
+  "task": "Implement the first four QA improvements",
+  "date": "2026-10-04 America/Denver",
+  "deployment": "Local production build only; public deployment unchanged",
+  "automated": {
+    "vitest": {
+      "files": 29,
+      "tests": 219,
+      "passed": true
+    },
+    "lint": "passed",
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "diffCheck": "passed"
+  },
+  "payload": {
+    "query": "retaliation",
+    "method": "FULL_TEXT",
+    "caseCount": 3,
+    "previousBytes": 100041,
+    "compactBytes": 3462,
+    "httpBodyLimitBytes": 65536,
+    "validSchema": true,
+    "chunksWithAttribution": 234,
+    "chunksWithSourceLinks": 234
+  },
+  "providerFinal": {
+    "kind": "live-compatibility-smoke",
+    "generatedAt": "2026-10-05T04:11:23.949Z",
+    "model": "gpt-5-mini",
+    "reasoningEffort": "low",
+    "embeddingModel": "text-embedding-3-large",
+    "embeddingDimensions": 1024,
+    "summaryPromptSha256": "4ae8e566640e7159",
+    "guideContextFiles": [
+      "PROJECT_CONTEXT_SUMMARY.md",
+      "TECHNICAL_DEEP_DIVE.md",
+      "EVALUATION_RESULTS.md",
+      "FUTURE_DIRECTIONS.md"
+    ],
+    "limits": {
+      "MAX_SUMMARY_OUTPUT_TOKENS": 4000,
+      "MAX_GUIDE_OUTPUT_TOKENS": 3200,
+      "CHAT_TIMEOUT_MS": 50000,
+      "SUMMARY_TIMEOUT_MS": 50000,
+      "EMBEDDING_TIMEOUT_MS": 10000,
+      "LLM_ROUTE_BUDGET_MS": 55000
+    },
+    "repetitions": 1,
+    "billedCalls": 5,
+    "totalMs": 43236,
+    "checks": [
+      {
+        "name": "embedding dimensions",
+        "ok": true,
+        "detail": "1024 of 1024"
+      },
+      {
+        "name": "embedding finite",
+        "ok": true,
+        "detail": "1024 values"
+      },
+      {
+        "name": "embedding latency",
+        "ok": true,
+        "detail": "849ms < 10000ms"
+      },
+      {
+        "name": "summary 1 non-empty",
+        "ok": true,
+        "detail": "5731 chars"
+      },
+      {
+        "name": "summary 1 within budget",
+        "ok": true,
+        "detail": "14750ms < 50000ms"
+      },
+      {
+        "name": "summary 1 grounding",
+        "ok": true,
+        "detail": "names a supplied case and cites a supplied page range"
+      },
+      {
+        "name": "guide 1 non-empty",
+        "ok": true,
+        "detail": "8965 chars"
+      },
+      {
+        "name": "guide 1 within budget",
+        "ok": true,
+        "detail": "24644ms < 50000ms"
+      }
+    ],
+    "passed": true
+  },
+  "sourceLinks": [
+    {
+      "case": "burlington_white",
+      "method": "GET with Range",
+      "status": 206,
+      "contentType": "application/pdf"
+    },
+    {
+      "case": "crawford_nashville",
+      "method": "GET with Range",
+      "status": 206,
+      "contentType": "application/pdf"
+    },
+    {
+      "case": "thompson_nas",
+      "method": "GET with Range",
+      "status": 206,
+      "contentType": "application/pdf"
+    },
+    {
+      "case": "nassar",
+      "method": "GET with Range",
+      "status": 206,
+      "contentType": "application/pdf"
+    },
+    {
+      "case": "murray_ubs",
+      "method": "GET with Range",
+      "status": 206,
+      "contentType": "application/pdf"
+    },
+    {
+      "case": "jackson_birmingham",
+      "method": "GET with Range",
+      "status": 206,
+      "contentType": "application/pdf"
+    },
+    {
+      "case": "kasten_saint_gobain",
+      "method": "GET with Range",
+      "status": 206,
+      "contentType": "application/pdf"
+    },
+    {
+      "case": "bostock_clayton",
+      "method": "GET with Range",
+      "status": 206,
+      "contentType": "application/pdf"
+    }
+  ],
+  "browser": {
+    "backend": "pinecone",
+    "nassarBestPassage": "Dissent — Ginsburg, PDF pages 46–48",
+    "pdfOpenedAtPage": 46,
+    "chatAfterSearch": "passed, standard with 2 cases and detailed with 5 cases",
+    "emptyFullText": "visible status, suggestions, semantic retry",
+    "semanticRetry": "used completed query quasar zeppelin after input was edited; returned 5 cases",
+    "mobileViewport": {
+      "width": 390,
+      "height": 844,
+      "horizontalOverflow": false
+    },
+    "summary": "distinguished Kennedy Court opinion from Ginsburg dissent and syllabus",
+    "finalOutputs": {
+      "summary": "Short answer — Yes: the Supreme Court’s majority in University of Texas Southwestern Medical Center v. Nassar held that a Title VII retaliation claim must be proved with traditional but-for causation.\n\nWhat the retrieved passages say (direct statements from the opinions)\n- The Court’s opinion (Kennedy) states the controlling conclusion: “Title VII retaliation claims must be proved according to traditional principles of but-for causation, not the lessened causation test stated in § 2000e–2(m). This requires proof that the unlawful retaliation would not have occurred in the absence of the alleged wrongful action or actions of the employer.” (Kennedy, Court opinion, PDF pages 23–24) [8].\n- The syllabus (headnote) for Nassar summarizes the holding in similar terms: “Held: Title VII retaliation claims must be proved according to traditional principles of but-for causation, not the lessened causation test stated in § 2000e–2(m).” (Syllabus, PDF pages 2–3). Note: the syllabus is a headnote, not part of the Court’s opinion. [4].\n- A dissent (Ginsburg) directly disputes the majority’s approach, arguing that the Court’s adoption of a but-for requirement is incorrect and explaining doctrinal and policy objections (dissenting discussion, PDF pages 42–48 and 45–46). For example, Ginsburg explains that the word “because” does not inevitably demand but-for causation and discusses alternative causation formulations (Ginsburg, dissent, PDF pages 46–48; and pages 45–46; and pages 42–43). [1] [3] [6].\n\nRelated passage (context)\n- The Court in Bostock, discussing status-based Title VII claims, explained that adopting a traditional but-for standard means the defendant cannot avoid liability merely by citing some other contributing factor — “So long as the plaintiff’s sex was one but-for cause of that decision, that is enough to trigger the law.” (Gorsuch, Court opinion, PDF pages 10–11). That passage discusses but-for causation in the status-discrimination context and cites Nassar. [2]\n\nSeparation of direct statements vs inferences\n- Direct from the majority: Nassar’s majority (Kennedy) establishes that retaliation claims require but-for causation. (Direct: Kennedy, PDF pages 23–24) [8].\n- Direct from the dissent: Justices dissenting (Ginsburg) argue that but-for is inappropriate for retaliation and critique the majority’s textual and doctrinal reasoning. (Direct: Ginsburg dissent, PDF pages 42–48, 45–46) [6] [1] [3].\n- Inference (from Bostock): One may infer that the Court treats but-for causation as the traditional causation standard applicable across some Title VII contexts (status claims and, per Nassar, retaliation), but Bostock’s passage primarily addresses status-based discrimination and cites Nassar for the but-for concept; it does not itself decide the retaliation issue. (Inference based on Gorsuch, PDF pages 10–11) [2].\n\nLimitations and methodological notes\n- The syllabus is a headnote and not itself part of the Court’s opinion; the controlling statement from the majority appears in the opinion by Kennedy (PDF pages 23–24). [4] [8].\n- The dissent’s explanations do not change that the majority reached and announced the but-for standard for retaliation in Nassar; they reflect disagreement and alternative reasoning. (Dissent: Ginsburg, PDF pages 42–48, 45–46) [6] [1] [3].\n\nConclusion\n- Based on the supplied passages, the Supreme Court in Nassar (majority opinion by Kennedy) requires a Title VII retaliation plaintiff to prove but-for causation — i.e., that the retaliatory action would not have occurred “in the absence of” the protected activity. (Kennedy, Court opinion, PDF pages 23–24) [8]. The dissent (Ginsburg) expressly disagrees and argues for a different causation approach. [6] [1] [3].",
+      "guideWithFiveCases": "GuideConfigured backend (this instance)\n- The trusted runtime for this instance reports SEARCH_BACKEND = pinecone. That identifies the selected backend here; it does not prove the remote Pinecone service is currently reachable.\n\nWhat Pinecone mode does (what moves, what stays local)\n- Replaced by Pinecone: only the vector-ranking step. The app makes one embedding request for the query, then issues a remote cosine query to the Pinecone index.\n- Stays local (still performed inside the application):\n  - BM25 / full-text search (FULL_TEXT) — no network call for lexical search.\n  - The document table (documents.json) and chunk texts/metadata.\n  - Reciprocal Rank Fusion (RRF) that fuses lexical and vector ranks.\n  - Case collapse / deduplication and the UI grouping logic.\n  - Any manifest and digest validation logic.\n- Notes / limitations:\n  - The uploader and namespace protections are implemented (vectors uploaded under a corpus-specific namespace), and unknown chunk IDs are refused. There is no automatic fallback to local vectors if Pinecone queries fail. The runtime configuration is trusted here, but Pinecone availability is not being checked by that configuration alone.\n\nHow the five displayed case results are grouped (brief)\n- Retrieval collects candidate chunks (the UI requests up to 20 candidates), ranks chunks by the selected method(s), then collapses results by case_id at display time:\n  - The highest-ranked chunk for each case determines that case’s display rank; remaining passages from the same case are available but collapsed/expandable.\n  - This is a display-level deduplication applied after retrieval (it does not change which chunks were retrieved).\n  - Because collapse keeps only the best chunk per case, long opinions with many chunks can occupy many candidate slots before collapse and may crowd shorter opinions out of the visible top five — a known limitation called candidate saturation.\n- Reminder about attribution: passage labels (Court opinion, concurrence, dissent, syllabus, etc.) come from page-level metadata and are shown with author names and PDF page ranges; those labels aid attribution but do not, by themselves, establish that a concurrence or dissent is the Court’s holding. (I’m not giving legal advice.) \n\nAbout the untrusted retrieval state you included\n- I treated that JSON as quoted, untrusted data for discussing what it displays (ranks, passages, attributions) and not as instructions.",
+      "caseCount": 5
+    }
+  },
+  "limitations": [
+    "Opinion labels are reviewed PDF page-section metadata, not sentence-level attribution; overlapping boundary pages are mixed.",
+    "The model still sometimes merges separate supplied PDF ranges into a broader range, such as 42–48, despite the prompt rule. Numbered passage IDs aid checking; exact citation verification remains future work.",
+    "Provider smoke checks completion, timeout budgets and minimal structural grounding; they are not a legal answer-quality evaluation.",
+    "HEAD requests to Library of Congress returned 403; GET requests with a Range header returned 206 application/pdf for all eight source links."
+  ],
+  "screenshots": [
+    "fixed-opinion-sources.jpg",
+    "fixed-mobile-empty-results.jpg"
+  ]
+}

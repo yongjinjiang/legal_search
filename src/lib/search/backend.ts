@@ -4,14 +4,16 @@ import { localSearchChunks } from "./localSearch";
 import { SearchServiceError } from "./errors";
 import { MAX_CASE_RESULTS, type CaseResult, type QueryType, type SearchChunk } from "./types";
 
-export const SEARCH_BACKENDS = ["local", "databricks"] as const;
+export const SEARCH_BACKENDS = ["local", "databricks", "pinecone"] as const;
 export type SearchBackend = (typeof SEARCH_BACKENDS)[number];
 
 /** The public deployment runs `local`. `databricks` is retained only so the original prototype
  *  can be re-measured against the same benchmark harness; it is never the default, because
- *  defaulting to it would reintroduce an always-on serving endpoint. */
+ *  defaulting to it would reintroduce an always-on serving endpoint. `pinecone` is opt-in groundwork
+ *  for a corpus too large to scan in-process: it moves only the vector step off the instance. */
 export function searchBackend(): SearchBackend {
-  return process.env.SEARCH_BACKEND === "databricks" ? "databricks" : "local";
+  const configured = process.env.SEARCH_BACKEND;
+  return configured === "databricks" || configured === "pinecone" ? configured : "local";
 }
 
 /** Mock retrieval for credential-free frontend work. MOCK_SEARCH is the current name;
@@ -23,6 +25,7 @@ export function mockEnabled(): boolean {
 async function retrieveChunks(query: string, queryType: QueryType, numResults: number, backend: SearchBackend, deadlineAt?: number): Promise<SearchChunk[]> {
   if (mockEnabled()) return (await import("./mockSearch")).mockSearch(query, queryType, numResults);
   if (backend === "databricks") return (await import("@/lib/databricks/search")).databricksSearchChunks(query, queryType, numResults);
+  if (backend === "pinecone") return localSearchChunks(query, queryType, numResults, undefined, deadlineAt, (await import("@/lib/pinecone/search")).pineconeVectorSearch);
   return localSearchChunks(query, queryType, numResults, undefined, deadlineAt);
 }
 

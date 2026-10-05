@@ -2,7 +2,8 @@ import { budgetFor, DeadlineExceededError } from "@/lib/deadline";
 import { MAX_SUMMARY_OUTPUT_TOKENS, SUMMARY_MAX_CASES, SUMMARY_MAX_PASSAGES, SUMMARY_PASSAGE_CHARS, SUMMARY_TIMEOUT_MS } from "@/lib/limits";
 import { llmProvider } from "@/lib/llm/openai";
 import { LlmServiceError } from "@/lib/llm/provider";
-import type { CaseResult } from "@/lib/search/types";
+import type { CaseResult, OpinionSection } from "@/lib/search/types";
+import { opinionAttribution } from "@/lib/search/opinionLabels";
 
 export class SummaryServiceError extends Error {
   constructor(public status: number, message: string) { super(message); }
@@ -13,7 +14,11 @@ export class SummaryServiceError extends Error {
 export const SUMMARY_SYSTEM_PROMPT = [
   "You summarise retrieved U.S. Supreme Court opinion passages for a legal researcher.",
   "Use only the passages supplied below. Do not rely on outside knowledge of these cases, and do not introduce cases that are not in the passages.",
-  "Name each case you rely on and cite its page range exactly as given.",
+  "Name each case you rely on and cite its page range exactly as given, with its numbered passage ID [n]. Keep every range separate: never merge adjacent or overlapping ranges into a broader span, and never invent a pinpoint page.",
+  "All supplied page ranges are PDF page numbers, not U.S. Reports or slip-opinion printed page numbers; label citations as PDF pages.",
+  "Respect the opinion-section attribution supplied with each passage. Attribute a dissent or concurrence to its author, never to the Court's holding. A syllabus is a headnote, not the Court's opinion. Counsel and front matter are not judicial reasoning.",
+  "For mixed sections, page-level boundaries may overlap: identify the speaker from the passage text before attributing a statement. If the speaker is unclear or the section is unclassified, say so rather than assuming majority authority.",
+  "Only state a holding as verified when a supplied Court-opinion passage supports it directly. A dissent's description of the majority, or a syllabus alone, does not independently verify that holding; explain that limitation.",
   "Separate what a passage states directly from what you are inferring, and label inferences as such.",
   "State plainly where the retrieved passages are insufficient to answer the question.",
   "You are not legal counsel. Describe what the retrieved opinions say; never give personalised legal advice or tell the reader what to do.",
@@ -24,22 +29,23 @@ export const SUMMARY_SYSTEM_PROMPT = [
  *
  *  Round-robin rather than case-by-case: a 101-chunk opinion would otherwise consume the whole
  *  budget and the summary would silently cover one case instead of five. */
-export function selectPassages(results: CaseResult[]): Array<{ caseName: string; citation: string; pageStart: number; pageEnd: number; text: string }> {
+type SummaryPassage = { caseName: string; citation: string; pageStart: number; pageEnd: number; text: string; opinionSections?: OpinionSection[] };
+export function selectPassages(results: CaseResult[]): SummaryPassage[] {
   const cases = results.slice(0, SUMMARY_MAX_CASES);
-  const selected: Array<{ caseName: string; citation: string; pageStart: number; pageEnd: number; text: string }> = [];
+  const selected: SummaryPassage[] = [];
   const depth = Math.max(0, ...cases.map((result) => result.passages.length));
   for (let round = 0; round < depth && selected.length < SUMMARY_MAX_PASSAGES; round += 1) {
     for (const result of cases) {
       const passage = result.passages[round];
       if (!passage || selected.length >= SUMMARY_MAX_PASSAGES) continue;
-      selected.push({ caseName: result.caseName, citation: result.citation, pageStart: passage.pageStart, pageEnd: passage.pageEnd, text: passage.chunkText.slice(0, SUMMARY_PASSAGE_CHARS) });
+      selected.push({ caseName: result.caseName, citation: result.citation, pageStart: passage.pageStart, pageEnd: passage.pageEnd, text: passage.chunkText.slice(0, SUMMARY_PASSAGE_CHARS), opinionSections: passage.opinionSections });
     }
   }
   return selected;
 }
 
 export function buildSummaryPrompt(question: string, results: CaseResult[]): string {
-  const passages = selectPassages(results).map((passage, index) => `[${index + 1}] ${passage.caseName}, ${passage.citation}, pages ${passage.pageStart}–${passage.pageEnd}\n${passage.text}`);
+  const passages = selectPassages(results).map((passage, index) => `[${index + 1}] ${passage.caseName}, ${passage.citation}, PDF pages ${passage.pageStart}–${passage.pageEnd}\nAttribution: ${opinionAttribution(passage.opinionSections)}\n${passage.text}`);
   return `<research_question>\n${question}\n</research_question>\n\n<retrieved_passages>\n${passages.join("\n\n")}\n</retrieved_passages>`;
 }
 

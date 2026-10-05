@@ -29,9 +29,9 @@ sized for a workload that does not exist.
 
 Phase 2 replaced the managed index with an application-level engine. The decision rests on a
 concrete number: 234 vectors × 1024 dimensions is a 958 KB matrix, and a full linear scan over it
-is a sub-millisecond multiply-accumulate loop. At that scale a vector database is not an
-optimisation, it is an operational liability with a monthly bill. FAISS, pgvector, Pinecone,
-Qdrant, and Elasticsearch were all considered unnecessary for the same reason.
+is a sub-millisecond multiply-accumulate loop. At that scale, the local scan is the default because a remote vector service is not required for
+latency or capacity. An optional Pinecone path is implemented to study the tradeoff at larger
+scale; selecting it adds a remote vector query rather than replacing the whole search engine.
 
 ## Static artifacts
 
@@ -49,7 +49,7 @@ Vectors are base64 Float32 rather than JSON numbers: the numeric form is roughly
 larger and reintroduces decimal rounding, while base64 round-trips the exact float32 bits.
 
 The artifacts are positional — row `i` of the embedding matrix is document `i` — so they are
-cross-checked at load. The manifest carries a SHA-256 digest of the chunk ID sequence; if a
+cross-checked at load. The manifest carries a SHA-256 digest of length-prefixed chunk IDs and text; if a
 rebuild reordered the corpus without refreshing every file, the mismatch is refused rather than
 served as a silently mis-attributed ranking. Model and dimension mismatches between the runtime
 configuration and the built index are refused the same way. The builder is idempotent: it reuses
@@ -111,9 +111,10 @@ and Q18. The three methods tie on Recall@3 without sharing a blind spot — ANN'
 is Q18, full text's and hybrid's is Q17 — and hybrid holds the highest Recall@1 outright. See `EVALUATION_RESULTS.md` for the measured values and `LOCAL_RETRIEVAL_EVALUATION.md` for
 the embedding dimension tradeoff, the BM25 sweep, and the 100-cell RRF grid.
 
-Q17 is the one genuine regression, and its cause is structural: RRF fuses chunk ranks, so a case
-accumulates rank credit once per chunk, and *Thompson*'s 7 chunks are outvoted by *Bostock*'s 101
-and *Nassar*'s 39. Case-level fusion was implemented and measured as an alternative; it fixed Q17
+Q17 exposes a candidate-diversity weakness: RRF scores each chunk independently, and case collapse
+keeps the best chunk rather than summing a case's chunk scores. Long opinions can occupy many
+candidate slots, leaving short opinions below the display cutoff. *Thompson* has 7 chunks,
+*Bostock* 101, and *Nassar* 39. This is candidate saturation, not accumulated case-level votes. Case-level fusion was implemented and measured as an alternative; it fixed Q17
 but lowered Recall@1 and Recall@3 overall, and was rejected.
 
 Reranking was attempted in Phase 1 but the workspace reported that it was not enabled. It belongs
@@ -155,3 +156,42 @@ jurisdiction, court, date, statute, and document type, sharded lexical indexes, 
 per-slice evaluation, and selective reranking all become necessary. The engineering judgment here
 is about matching infrastructure to corpus size, not about vector databases being unnecessary in
 general.
+
+## Optional Pinecone vector backend
+
+`SEARCH_BACKEND` selects `local` (default), `pinecone`, or the retained `databricks` comparison
+adapter. Pinecone mode makes one query embedding and a remote cosine-index query for ANN and
+HYBRID. BM25, RRF, document lookup and case collapse remain local; FULL_TEXT never calls Pinecone.
+The offline uploader uses the existing normalized 1024-dimensional vectors, creates a serverless
+index if necessary, and verifies vector visibility and probe ordering. A corpus/model-specific
+namespace prevents using an old corpus after a rebuild. Unknown returned IDs fail explicitly.
+There is no automatic fallback to local vectors or mock results after a Pinecone failure.
+
+Backend configuration is injected server-side into the technical guide, without secrets. It
+identifies the selected backend and mock mode for this instance, not a remote readiness result.
+The existing benchmark numbers describe the local engine and the Phase 1 Databricks baseline;
+they should not be relabelled as a new Pinecone benchmark or a quality evaluation of the LLM.
+
+## Passage attribution and request bounds
+
+`data/metadata/opinion_sections.json` records reviewed source URLs and section ranges for all
+eight PDFs. `readLocalIndex` joins that catalog only when its corpus digest matches the validated
+document table. Overlapping boundary pages yield mixed labels; unknown or changed corpora stay
+unclassified. This metadata join leaves the committed vectors and chunk texts unchanged. Each
+visible best or additional passage links to the source PDF using `#page=` with a 1-based PDF page.
+The labels distinguish Court opinion, concurrence, dissent, syllabus, and front matter. They
+do not establish sentence-level authorship on shared pages or convert PDF pages into reporter
+pinpoint citations.
+
+The summary prompt receives these section labels and author names for each selected passage.
+It requires numbered passage IDs and separate exact PDF ranges, without merging citations.
+It must distinguish dissent/concurrence from the Court's reasoning, avoid treating a headnote as
+an opinion, and state when a majority holding cannot be verified from supplied Court passages.
+At most eight passages, 1,800 characters each, are selected round-robin across five cases.
+
+The technical guide's browser request contains only five case names/citations, section labels
+and at most 900 characters of each best passage. Duplicate best passages, full passage arrays and
+other search fields are removed before serialization, keeping normal requests below the 64 KB
+HTTP limit. The server retains schema validation, prompt trimming, and untrusted delimiters.
+An empty result array is a completed zero-match search, with a visible explanation and a full-text
+retry action that runs semantic search on the completed query.

@@ -35,7 +35,7 @@ describe("research summary grounding inputs", () => {
   it("labels every passage with its case name and page range for citation", () => {
     const prompt = buildSummaryPrompt("Does but-for causation apply?", [caseResult("nassar", [chunk("nassar", 3)])]);
     // The citation identifies the case; the page range comes from the specific passage.
-    expect(prompt).toContain("nassar case, 1 U.S. 1, pages 3–4");
+    expect(prompt).toContain("nassar case, 1 U.S. 1, PDF pages 3–4");
     // Question and passages are delimited so the model treats both as quoted data.
     expect(prompt).toContain("<research_question>");
     expect(prompt).toContain("<retrieved_passages>");

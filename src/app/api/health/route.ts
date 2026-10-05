@@ -4,6 +4,7 @@ import { llmProvider } from "@/lib/llm/openai";
 import { mockEnabled, searchBackend } from "@/lib/search/backend";
 import { indexReadiness } from "@/lib/search/localIndex";
 import { embeddingMismatch } from "@/lib/search/embeddingCompatibility";
+import { pineconeConfig } from "@/lib/pinecone/client";
 import type { EmbeddingProvider } from "@/lib/embeddings/provider";
 
 // The README's deployment check hits this route, so "ok" must be unreachable when a deployment
@@ -48,12 +49,17 @@ export async function GET() {
     const mismatch = embeddingMismatch(embeddings, readiness.index.manifest);
     if (mismatch) { semanticConfigured = false; embeddingError = mismatch; }
   }
+  // The Pinecone backend keeps lexical search local and moves only the vector step, so a missing
+  // key degrades semantic search exactly as a missing embedding key does. Whether the namespace
+  // is populated needs a network call, which this route does not make.
+  let vectorStoreError: string | undefined;
+  if (backend === "pinecone" && !pineconeConfig()) { semanticConfigured = false; vectorStoreError = "SEARCH_BACKEND is pinecone but PINECONE_API_KEY is not set."; }
   const status = !lexicalConfigured ? "unavailable" : semanticConfigured && chatConfigured ? "ok" : "degraded";
   const manifest = readiness.ready ? readiness.index.manifest : undefined;
   return NextResponse.json({
     status,
     backend,
-    searchMode: "local",
+    searchMode: backend === "pinecone" ? "pinecone" : "local",
     searchConfigured: lexicalConfigured,
     lexicalConfigured,
     semanticConfigured,
@@ -63,6 +69,7 @@ export async function GET() {
     // debugging without disclosing anything.
     indexError: readiness.ready ? undefined : readiness.reason,
     embeddingError,
+    vectorStoreError,
     chatError,
   }, { status: lexicalConfigured ? 200 : 503 });
 }
