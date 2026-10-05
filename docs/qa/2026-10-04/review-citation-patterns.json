@@ -1,0 +1,50 @@
+{
+  "kind": "citation-pattern-corpus-measurement",
+  "generatedAt": "2026-10-05T05:40:42.560Z",
+  "documents": 234,
+  "lines": 4394,
+  "categories": {
+    "reporter_pinpoint": 240,
+    "relative_pinpoint": 289,
+    "model_url": 13,
+    "inline_source_marker": 1
+  },
+  "samples": {
+    "reporter_pinpoint": [
+      "burlington_white__0001",
+      "burlington_white__0002",
+      "burlington_white__0004",
+      "burlington_white__0005"
+    ],
+    "relative_pinpoint": [
+      "burlington_white__0002",
+      "burlington_white__0005",
+      "burlington_white__0008",
+      "burlington_white__0009"
+    ],
+    "model_url": [
+      "burlington_white__0010",
+      "crawford_nashville__0010",
+      "nassar__0017",
+      "nassar__0029"
+    ],
+    "inline_source_marker": [
+      "crawford_nashville__0003"
+    ]
+  },
+  "secondaryQuotes": [
+    {
+      "chunkId": "nassar__0037",
+      "previousRejected": true,
+      "nowRejected": false,
+      "otherLineIssue": "relative_pinpoint"
+    },
+    {
+      "chunkId": "nassar__0038",
+      "previousRejected": true,
+      "nowRejected": false,
+      "otherLineIssue": "relative_pinpoint"
+    }
+  ],
+  "limitations": "Counts are per chunk line (overlap can repeat text). This is a pattern inventory, not a labelled accuracy benchmark. Bare at + number and bare p. + number are deliberately ambiguous and allowed."
+}

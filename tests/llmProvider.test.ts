@@ -38,6 +38,28 @@ describe("OpenAI chat provider", () => {
     expect(body).not.toHaveProperty("max_completion_tokens");
   });
 
+  it.each([
+    [undefined, undefined, true],
+    ["https://gateway.example/v1", undefined, false],
+    ["https://gateway.example/v1", true, true],
+    [undefined, false, false],
+  ])("requests JSON for summaries only when the configured endpoint supports it", async (baseUrl, jsonMode, expected) => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(reply("{}")));
+    vi.stubGlobal("fetch", fetchMock);
+    const provider = createOpenAIChatProvider({ ...settings, baseUrl, jsonMode });
+    await provider.complete([{ role: "user", content: "Return JSON" }], { ...options, outputFormat: "json" });
+    await provider.complete([{ role: "user", content: "Explain retrieval" }], options);
+    const bodies = fetchMock.mock.calls.map(([, init]) => JSON.parse(String(init.body)));
+    expect(bodies[0].response_format).toEqual(expected ? { type: "json_object" } : undefined);
+    expect(bodies[1]).not.toHaveProperty("response_format");
+  });
+
+  it("validates the JSON-mode gateway override", () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    process.env.OPENAI_JSON_MODE = "yes";
+    expect(() => llmProvider()).toThrow(/OPENAI_JSON_MODE/);
+  });
+
   it("logs the token accounting when a reasoning model returns nothing", async () => {
     // This failure is a configuration fault, not an outage: the budget is consumed by reasoning
     // tokens before any text is emitted, and it recurs until the cap is raised. Without the token

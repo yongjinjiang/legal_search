@@ -6,6 +6,7 @@ import type { CaseResult, OpinionSection } from "@/lib/search/types";
 import { opinionAttribution } from "@/lib/search/opinionLabels";
 import { z } from "zod";
 import type { LegalSummary, SummarySource } from "./summaryTypes";
+import { inlineReferenceIssue } from "./summaryReferences";
 
 export class SummaryServiceError extends Error {
   constructor(public status: number, message: string) { super(message); }
@@ -17,7 +18,7 @@ export const SUMMARY_SYSTEM_PROMPT = [
   "You summarise retrieved U.S. Supreme Court opinion passages for a legal researcher.",
   "Use only the passages supplied below. Do not rely on outside knowledge of these cases, and do not introduce cases that are not in the passages.",
   'Return only a JSON object with this shape: {"blocks":[{"text":"A concise paragraph naming the case and explaining the supplied evidence.","citations":[1]}]}. Use at most six blocks. Each citations array contains only the numbered passage IDs supporting that block. An empty array is allowed only for a limitation of the retrieved evidence.',
-  "Do not put citation markers, page numbers, page ranges, or source URLs in text. The application renders numbered references and exact PDF page ranges from the supplied source metadata. Never merge ranges or invent pinpoint pages. Supplied ranges are PDF pages, not reporter pages.",
+  "Do not add citation markers, opinion pinpoint citations, PDF page numbers or ranges, or source URLs to text. The application renders numbered references and exact PDF page ranges from the supplied source metadata. Never merge ranges or invent pinpoint pages. Supplied ranges are PDF pages, not reporter pages. Relevant quotations of secondary authorities may retain their original citations.",
   "Respect the opinion-section attribution supplied with each passage. Attribute a dissent or concurrence to its author, never to the Court's holding. A syllabus is a headnote, not the Court's opinion. Counsel and front matter are not judicial reasoning.",
   "For mixed sections, page-level boundaries may overlap: identify the speaker from the passage text before attributing a statement. If the speaker is unclear or the section is unclassified, say so rather than assuming majority authority.",
   "Only state a holding as verified when a supplied Court-opinion passage supports it directly. A dissent's description of the majority, or a syllabus alone, does not independently verify that holding; explain that limitation.",
@@ -59,28 +60,42 @@ const draftSchema = z.object({ blocks: z.array(z.object({
 /** References come from server retrieval, never from model-authored metadata. This validates
  * citation identity and presentation; it cannot establish that every prose claim is true. */
 export function resolveSummaryDraft(raw: string, results: CaseResult[]): LegalSummary {
-  const invalid = () => new SummaryServiceError(503, "The summary could not be verified against its source references. Try again.");
+  const invalid = (category: string) => {
+    console.error("[summary] draft rejected", { category });
+    return new SummaryServiceError(503, "The summary could not be verified against its source references. Try again.");
+  };
+  // Tolerate one complete JSON code fence; never extract JSON from surrounding model prose.
+  const trimmed = raw.trim();
+  const fenced = /^```(?:json)?\s*\n([\s\S]*?)\n```$/i.exec(trimmed);
   let json: unknown;
-  try { json = JSON.parse(raw); } catch { throw invalid(); }
+  try { json = JSON.parse(fenced?.[1] ?? trimmed); } catch { throw invalid("json_parse"); }
   const draft = draftSchema.safeParse(json);
-  if (!draft.success) throw invalid();
+  if (!draft.success) throw invalid("schema");
   const passages = selectPassages(results);
   const used = new Set<number>();
-  const paragraphs = draft.data.blocks.map((block) => {
-    // Page references in model prose would bypass the deterministic source list. Reject them
-    // rather than silently displaying the merged ranges found during browser QA.
-    if (/\[\s*\d+\s*\]|\b(?:PDF\s+)?(?:pages?|pp?\.?)\s*\d|https?:\/\//i.test(block.text)) throw invalid();
+  const paragraphs: string[] = [];
+  let omitted = 0;
+  for (const block of draft.data.blocks) {
     const ids = [...new Set(block.citations)];
-    for (const id of ids) { if (id > passages.length) throw invalid(); used.add(id); }
-    return `${block.text}${ids.length ? ` ${ids.map((id) => `[${id}]`).join(" ")}` : ""}`;
-  });
-  if (used.size === 0) throw invalid();
+    if (ids.some((id) => id > passages.length)) throw invalid("unknown_source_id");
+    const category = inlineReferenceIssue(block.text);
+    if (category) {
+      // Omit the entire paragraph, preserving quotations and meaning in the retained text.
+      // Do not pay for a second completion or publish unvalidated model pinpoints.
+      console.warn("[summary] paragraph omitted", { category });
+      omitted += 1;
+      continue;
+    }
+    for (const id of ids) used.add(id);
+    paragraphs.push(`${block.text}${ids.length ? ` ${ids.map((id) => `[${id}]`).join(" ")}` : ""}`);
+  }
+  if (used.size === 0) throw invalid("no_source_refs");
   const sources: SummarySource[] = [...used].sort((a, b) => a - b).map((id) => {
     const { text: _text, ...source } = passages[id - 1];
     void _text;
     return { id, ...source };
   });
-  return { summary: paragraphs.join("\n\n"), sources };
+  return { summary: paragraphs.join("\n\n"), sources, ...(omitted ? { notice: "Some draft paragraphs contained unverified references and were omitted. Check the linked passages for complete context." } : {}) };
 }
 
 /**
@@ -94,7 +109,7 @@ export async function generateLegalSummary(question: string, results: CaseResult
   if (!provider) throw new SummaryServiceError(503, "Research summaries are not configured on this deployment. Search results remain available.");
   if (results.length === 0) throw new SummaryServiceError(400, "There are no retrieved passages to summarise.");
   try {
-    const raw = await provider.complete([{ role: "system", content: SUMMARY_SYSTEM_PROMPT }, { role: "user", content: buildSummaryPrompt(question, results) }], { maxOutputTokens: MAX_SUMMARY_OUTPUT_TOKENS, timeoutMs: budgetFor(SUMMARY_TIMEOUT_MS, deadlineAt) });
+    const raw = await provider.complete([{ role: "system", content: SUMMARY_SYSTEM_PROMPT }, { role: "user", content: buildSummaryPrompt(question, results) }], { maxOutputTokens: MAX_SUMMARY_OUTPUT_TOKENS, timeoutMs: budgetFor(SUMMARY_TIMEOUT_MS, deadlineAt), outputFormat: "json" });
     return resolveSummaryDraft(raw, results);
   } catch (error) {
     if (error instanceof DeadlineExceededError) throw new SummaryServiceError(504, "The request ran out of time before a summary could be generated.");

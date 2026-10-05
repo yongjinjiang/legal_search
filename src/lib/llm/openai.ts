@@ -4,7 +4,7 @@ import { LlmServiceError, type CompletionOptions, type LlmMessage, type LlmProvi
 export const DEFAULT_CHAT_MODEL = "gpt-5-mini";
 const DEFAULT_BASE_URL = "https://api.openai.com/v1";
 
-export type OpenAIChatSettings = { apiKey: string; model: string; baseUrl?: string; reasoningEffort?: string };
+export type OpenAIChatSettings = { apiKey: string; model: string; baseUrl?: string; reasoningEffort?: string; jsonMode?: boolean };
 
 // The provider's own enum. Anything outside it is a typo that becomes an invalid request.
 export const SUPPORTED_REASONING_EFFORTS = ["minimal", "low", "medium", "high"] as const;
@@ -37,11 +37,14 @@ export function resolveReasoningEffort(): string {
 export function openAIChatSettings(): OpenAIChatSettings | undefined {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return undefined;
+  const jsonMode = process.env.OPENAI_JSON_MODE?.trim();
+  if (jsonMode && jsonMode !== "true" && jsonMode !== "false") throw new LlmServiceError(503, "OPENAI_JSON_MODE must be true or false when set.");
   return {
     apiKey,
     model: process.env.OPENAI_CHAT_MODEL || DEFAULT_CHAT_MODEL,
     baseUrl: process.env.OPENAI_BASE_URL,
     reasoningEffort: resolveReasoningEffort(),
+    jsonMode: jsonMode ? jsonMode === "true" : undefined,
   };
 }
 
@@ -55,7 +58,10 @@ export function isReasoningModel(model: string): boolean {
 type ChatResponse = { choices?: Array<{ message?: { content?: string }; finish_reason?: string }>; usage?: { prompt_tokens?: number; completion_tokens?: number; completion_tokens_details?: { reasoning_tokens?: number } } };
 
 export function createOpenAIChatProvider(settings: OpenAIChatSettings): LlmProvider {
-  const url = `${(settings.baseUrl || DEFAULT_BASE_URL).replace(/\/$/, "")}/chat/completions`;
+  const baseUrl = (settings.baseUrl || DEFAULT_BASE_URL).replace(/\/$/, "");
+  const url = `${baseUrl}/chat/completions`;
+  // Compatible gateways may not support response_format. Their operator can explicitly opt in.
+  const jsonMode = settings.jsonMode ?? baseUrl === DEFAULT_BASE_URL;
   const reasoning = isReasoningModel(settings.model);
   return {
     name: "openai",
@@ -64,6 +70,7 @@ export function createOpenAIChatProvider(settings: OpenAIChatSettings): LlmProvi
       const body = {
         model: settings.model,
         messages,
+        ...(options.outputFormat === "json" && jsonMode ? { response_format: { type: "json_object" } } : {}),
         ...(reasoning
           ? { max_completion_tokens: options.maxOutputTokens, reasoning_effort: settings.reasoningEffort }
           : { max_tokens: options.maxOutputTokens, temperature: 0.2 }),

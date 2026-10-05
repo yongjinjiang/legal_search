@@ -164,7 +164,10 @@ adapter. Pinecone mode makes one query embedding and a remote cosine-index query
 HYBRID. BM25, RRF, document lookup and case collapse remain local; FULL_TEXT never calls Pinecone.
 The offline uploader uses the existing normalized 1024-dimensional vectors, creates a serverless
 index if necessary, and verifies vector count, candidate identity and cosine scores with a 0.0005 tolerance. A corpus/model-specific
-namespace prevents using an old corpus after a rebuild. Unknown returned IDs fail explicitly.
+namespace prevents using an old corpus after a rebuild. First use per warm instance checks that
+the namespace count equals the local document count; failures are retried and success is cached.
+This detects partial uploads, not subsequent external changes to a checked namespace. Unknown
+returned IDs fail explicitly. Missing Pinecone credentials fail before query embedding.
 There is no automatic fallback to local vectors or mock results after a Pinecone failure.
 
 Backend configuration is injected server-side into the technical guide, without secrets. It
@@ -186,10 +189,17 @@ pinpoint citations.
 The summary prompt receives these section labels and author names for each selected passage.
 The model returns JSON paragraphs and numbered passage IDs, validated before display.
 The server resolves used IDs to case names, original PDF ranges, labels and links; the UI
-keeps each reference separate. Invalid IDs or model-authored inline page citations fail safely.
-This checks citation identity, not the accuracy of each prose claim.
-It must distinguish dissent/concurrence from the Court's reasoning, avoid treating a headnote as
-an opinion, and state when a majority holding cannot be verified from supplied Court passages.
+keeps each reference separate. Invalid IDs, schema failures or no retained sources fail safely.
+Recognised inline markers, PDF page references, relative and reporter pinpoints, and URLs cause
+their paragraph to be omitted with a visible notice, without a second billed completion. Bare
+secondary-authority references such as “p. 385” are allowed. The pattern guard is not a complete
+citation parser. Validation logs contain categories only, not draft text. Summary calls request
+JSON mode on the official OpenAI endpoint, while compatible gateways require an explicit
+`OPENAI_JSON_MODE=true` opt-in; a single complete JSON code fence is accepted with strict validation.
+This checks citation identity and presentation, not prose truth or legal support. The prompt
+instructs the model to distinguish dissent/concurrence from the Court's reasoning, avoid treating
+a headnote as an opinion, and state when a majority holding cannot be verified from supplied
+Court passages. These attribution instructions are not server-side fact checks.
 At most eight passages, 1,800 characters each, are selected round-robin across five cases.
 
 The technical guide's browser request contains only five case names/citations, section labels
@@ -199,8 +209,13 @@ HTTP limit. The server retains schema validation, prompt trimming, and untrusted
 An empty result array is a completed zero-match search, with a visible explanation and a full-text
 retry action that runs semantic search on the completed query.
 
-Pinecone host discovery and vector query consume a shared total deadline, including body reads.
-Concurrent discovery waiters keep their own waiting budgets. The uploader upserts an unchanged
+Pinecone readiness, host discovery and vector query consume one total runtime deadline, including
+body reads. Shared discovery and readiness run under their own fixed 8s bound; each concurrent
+caller limits its wait independently, including when the shortest caller starts first.
+The uploader upserts an unchanged
 corpus without clearing its active namespace; three score probes allow near-tie swaps but reject
 unknown/duplicate IDs, incorrect scores, material ordering inversions and missing stronger
 candidates. Exact ordering is diagnostic, not an upload acceptance criterion.
+Cleanup requires explicitly named `--prune <namespace>` arguments and refuses the current
+namespace. Retire or update all production and preview builds that use a namespace before naming
+it for pruning; no other namespace is automatically considered abandoned.

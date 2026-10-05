@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { fetchWithTimeout, HttpTimeoutError } from "@/lib/http";
 import { remainingMs } from "@/lib/deadline";
+import { PINECONE_TIMEOUT_MS } from "@/lib/limits";
 
 // Optional vector store for the semantic half of retrieval. The public deployment does not use
 // it: the committed artifacts in data/search/ are still the source of truth, and Pinecone holds
@@ -73,19 +74,12 @@ export function describeIndex(config: PineconeConfig, timeoutMs: number): Promis
 // control-plane failure does not poison the instance.
 const hosts = new Map<string, Promise<string>>();
 
-export async function resolveHost(config: PineconeConfig, timeoutMs: number): Promise<string> {
-  if (config.host) return Promise.resolve(config.host.replace(/^https?:\/\//, "").replace(/\/$/, ""));
-  let host = hosts.get(config.indexName);
-  if (!host) {
-    host = describeIndex(config, timeoutMs).then((index) => index.host);
-    host.catch(() => hosts.delete(config.indexName));
-    hosts.set(config.indexName, host);
-  }
-  // Concurrent callers share discovery, but each caller owns its waiting allowance. Timing out
-  // a short waiter must not abort discovery that another request still needs.
+/** A caller may stop waiting without cancelling a bounded operation shared by other callers. */
+export async function waitForSharedRequest<T>(request: Promise<T>, timeoutMs: number): Promise<T> {
+  if (timeoutMs <= 0) throw new HttpTimeoutError(timeoutMs);
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    return await Promise.race([host, new Promise<never>((_, reject) => {
+    return await Promise.race([request, new Promise<never>((_, reject) => {
       timer = setTimeout(() => reject(new HttpTimeoutError(timeoutMs)), timeoutMs);
     })]);
   } finally {
@@ -93,11 +87,27 @@ export async function resolveHost(config: PineconeConfig, timeoutMs: number): Pr
   }
 }
 
+export async function resolveHost(config: PineconeConfig, timeoutMs: number): Promise<string> {
+  if (timeoutMs <= 0) throw new HttpTimeoutError(timeoutMs);
+  if (config.host) return Promise.resolve(config.host.replace(/^https?:\/\//, "").replace(/\/$/, ""));
+  let host = hosts.get(config.indexName);
+  if (!host) {
+    host = describeIndex(config, PINECONE_TIMEOUT_MS).then((index) => index.host);
+    const pending = host;
+    host.catch(() => { if (hosts.get(config.indexName) === pending) hosts.delete(config.indexName); });
+    hosts.set(config.indexName, host);
+  }
+  // Concurrent callers share discovery, but each caller owns its waiting allowance. Timing out
+  // a short waiter must not abort discovery that another request still needs.
+  return waitForSharedRequest(host, timeoutMs);
+}
+
 export function resetPineconeHostCache(): void { hosts.clear(); }
 
 export type PineconeMatch = { id: string; score: number };
 
 export async function queryVectors(config: PineconeConfig, namespace: string, vector: number[], topK: number, timeoutMs: number): Promise<PineconeMatch[]> {
+  if (timeoutMs <= 0) throw new HttpTimeoutError(timeoutMs);
   const deadlineAt = Date.now() + timeoutMs;
   const host = await resolveHost(config, timeoutMs);
   const remaining = remainingMs(deadlineAt);

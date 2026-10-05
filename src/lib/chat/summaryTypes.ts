@@ -8,4 +8,4 @@ export type SummarySource = PassageProvenance & {
   pageEnd: number;
 };
 
-export type LegalSummary = { summary: string; sources: SummarySource[] };
+export type LegalSummary = { summary: string; sources: SummarySource[]; notice?: string };

@@ -216,7 +216,6 @@ Groundwork for a larger corpus; not used by the public deployment. Add `PINECONE
 
 ```bash
 npm run index:pinecone              # creates the index on first run, then upserts this corpus's namespace
-npm run index:pinecone -- --prune   # also delete namespaces left by earlier corpus builds
 ```
 
 The script creates a serverless cosine index (`legal-chunks`, aws/us-east-1 by default, the only
@@ -225,6 +224,13 @@ for known unique IDs, cosine scores within 0.0005 of the local scan, and top-k c
 ordering within that tolerance. Near ties may reorder; exact order is reported, not required.
 These three probes are an integrity smoke check, not a relevance benchmark. Re-uploading the
 same corpus upserts without first clearing its active namespace. Then set `SEARCH_BACKEND=pinecone`.
+
+Older namespaces are retained by default: a production or preview deployment may still use one.
+Only prune after confirming that every deployment using the named namespace has been retired or
+updated. Cleanup requires `npm run index:pinecone -- --prune <namespace>` with the full
+`corpus-` name and its 24 lowercase hex characters; repeat `--prune <namespace>` for additional
+names. A bare `--prune`, unrelated namespace name or this build's current namespace is rejected
+before any upload or deletion. Other namespaces are never selected automatically.
 
 Vectors are stored in a namespace derived from the corpus digest and the embedding model, so after
 a `build:index` that changes either, semantic search refuses to run until `index:pinecone` is re-run
@@ -405,7 +411,23 @@ the browser omits full passage arrays before sending a chat request. Zero full-t
 a visible explanation and an action to retry the completed query using semantic search.
 
 Summary citation metadata is generated from server-retrieved passages. The model returns JSON
-paragraphs and passage IDs; invalid IDs or inline page citations cause a safe error. Numbered
-source references retain each original PDF range, opinion label and source link separately.
-This validates reference identity, not the truth of every generated claim. Pinecone host
-discovery and query share one total timeout, including response-body consumption.
+paragraphs and passage IDs; invalid IDs, malformed output or a draft with no retained sources
+cause a safe error. One complete JSON code fence is accepted, with the same strict schema.
+Paragraphs containing recognised inline markers, PDF page references, relative pinpoints such
+as “ante, at 346”, reporter pinpoints or URLs are omitted with a visible notice; other paragraphs
+and their sources remain available without a second billed completion. Bare “p. 385” in a
+secondary-authority quotation is allowed. This pattern guard is not a complete citation parser.
+Numbered source references retain each original PDF range, opinion label and source link
+separately. This validates reference identity and presentation, not prose accuracy or whether a
+claim is legally supported. Opinion attribution and holding restrictions are model instructions,
+not server-side fact checks. Validation logs contain failure categories only, never draft text.
+
+Summary calls use OpenAI JSON mode on the official endpoint, followed by schema and source-ID
+validation. The technical guide continues to return prose. Compatible gateways default to
+prompt-only JSON; set `OPENAI_JSON_MODE=true` only after verifying gateway/model support, or
+`false` to opt out. Re-run the live provider check after changing the model or endpoint.
+
+Pinecone readiness, host discovery and query share one total runtime timeout, including response
+body consumption. Each warm instance caches a successful namespace count check against the
+local corpus; failed checks are retried. This detects incomplete uploads at first use, not later
+external mutations to a namespace already checked. Returned unknown chunk IDs are still refused.

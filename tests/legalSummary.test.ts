@@ -2,9 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildSummaryPrompt, generateLegalSummary, resolveSummaryDraft, selectPassages } from "../src/lib/chat/summary";
 import { SUMMARY_MAX_CASES, SUMMARY_MAX_PASSAGES, SUMMARY_PASSAGE_CHARS } from "../src/lib/limits";
 import type { CaseResult, SearchChunk } from "../src/lib/search/types";
+import { inlineReferenceIssue } from "../src/lib/chat/summaryReferences";
 
 const originalEnv = { ...process.env };
-afterEach(() => { process.env = { ...originalEnv }; vi.unstubAllGlobals(); });
+afterEach(() => { process.env = { ...originalEnv }; vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 const chunk = (caseId: string, n: number, text = `${caseId} passage ${n}`): SearchChunk => ({ chunkId: `${caseId}-${n}`, caseId, caseName: `${caseId} case`, citation: `${n} U.S. ${n}`, pageStart: n, pageEnd: n + 1, chunkText: text, rank: n });
 const caseResult = (caseId: string, passages: SearchChunk[]): CaseResult => ({ rank: 1, caseId, caseName: `${caseId} case`, citation: "1 U.S. 1", pageStart: 1, pageEnd: 2, bestPassage: passages[0].chunkText, method: "HYBRID", passages });
@@ -83,5 +84,70 @@ describe("research summary grounding inputs", () => {
     await expect(generateLegalSummary("question", [caseResult("a", [chunk("a", 1)])])).rejects.toMatchObject({ status: 503 });
     process.env.OPENAI_API_KEY = "test-key";
     await expect(generateLegalSummary("question", [])).rejects.toMatchObject({ status: 400 });
+  });
+
+  it.each([
+    ["See ante, at 346–347.", "relative_pinpoint"],
+    ["See supra at 350.", "relative_pinpoint"],
+    ["Id., at 352.", "relative_pinpoint"],
+    ["570 U.S., at 352", "reporter_pinpoint"],
+    ["570 U.S. 338, 350", "reporter_pinpoint"],
+    ["133 S. Ct. 2517, 2524–2525", "reporter_pinpoint"],
+    ["123 F.3d 100, at 105", "reporter_pinpoint"],
+    ["PDF pp. 42–46", "pdf_page_reference"],
+    ["pages 42–46", "pdf_page_reference"],
+    ["Evidence [1, 2].", "inline_source_marker"],
+  ])("recognises an unverified opinion reference: %s", (text, category) => {
+    expect(inlineReferenceIssue(text)).toBe(category);
+    expect(() => resolveSummaryDraft(JSON.stringify({ blocks: [{ text, citations: [1] }] }), [caseResult("a", [chunk("a", 1)])])).toThrow(/could not be verified/);
+  });
+
+  it.each([
+    "Restatement § 27, Comment a, p. 385",
+    "The Court cited 570 U.S. 338.",
+    "The rate remained at 3 percent.",
+    "The hearing began at 3 pm.",
+  ])("keeps secondary citations or quantities without guessing opinion pinpoints: %s", (text) => {
+    expect(inlineReferenceIssue(text)).toBeUndefined();
+    expect(resolveSummaryDraft(JSON.stringify({ blocks: [{ text, citations: [1] }] }), [caseResult("a", [chunk("a", 1)])]).summary).toBe(`${text} [1]`);
+  });
+
+  it("retains verified paragraphs, reports omissions, and logs categories without model text", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const results = [caseResult("a", [chunk("a", 1)]), caseResult("b", [chunk("b", 1)])];
+    const resolved = resolveSummaryDraft(JSON.stringify({ blocks: [
+      { text: "Private user detail: see ante, at 346–347.", citations: [2] },
+      { text: "The supplied passage discusses causation.", citations: [1] },
+    ] }), results);
+    expect(resolved.summary).toBe("The supplied passage discusses causation. [1]");
+    expect(resolved.sources.map((source) => source.id)).toEqual([1]);
+    expect(resolved.notice).toMatch(/omitted/);
+    expect(warn).toHaveBeenCalledWith("[summary] paragraph omitted", { category: "relative_pinpoint" });
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("Private user detail");
+  });
+
+  it("still rejects an unknown source ID even in a paragraph that would be omitted", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(() => resolveSummaryDraft(JSON.stringify({ blocks: [
+      { text: "Private detail: see ante, at 346.", citations: [99] },
+      { text: "Otherwise valid.", citations: [1] },
+    ] }), [caseResult("a", [chunk("a", 1)])])).toThrow(/could not be verified/);
+    expect(error).toHaveBeenCalledWith("[summary] draft rejected", { category: "unknown_source_id" });
+    expect(JSON.stringify(error.mock.calls)).not.toContain("Private detail");
+  });
+
+  it.each(["json", ""])("accepts a single complete %s code fence with the same strict schema", (language) => {
+    const raw = `\`\`\`${language}\n${JSON.stringify({ blocks: [{ text: "Grounded.", citations: [1] }] })}\n\`\`\``;
+    expect(resolveSummaryDraft(raw, [caseResult("a", [chunk("a", 1)])]).summary).toBe("Grounded. [1]");
+  });
+
+  it.each([
+    ['Commentary\n```json\n{"blocks":[]}\n```', "json_parse"],
+    ['```json\n{"blocks":[],"extra":"Private model detail"}\n```', "schema"],
+  ])("rejects wrapped commentary or extra schema fields without logging raw output", (raw, category) => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(() => resolveSummaryDraft(raw, [caseResult("a", [chunk("a", 1)])])).toThrow(/could not be verified/);
+    expect(error).toHaveBeenCalledWith("[summary] draft rejected", { category });
+    expect(JSON.stringify(error.mock.calls)).not.toContain("Private model detail");
   });
 });

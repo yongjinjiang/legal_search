@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as health } from "../src/app/api/health/route";
 import { pineconeNamespace, resetPineconeHostCache } from "../src/lib/pinecone/client";
-import { namespaceFor, pineconeVectorSearch } from "../src/lib/pinecone/search";
+import { namespaceFor, pineconeVectorSearch, resetPineconeReadinessCache } from "../src/lib/pinecone/search";
 import { searchBackend } from "../src/lib/search/backend";
 import { localSearchChunks } from "../src/lib/search/localSearch";
 import { RRF_CANDIDATE_DEPTH } from "../src/lib/search/hybridSearch";
@@ -13,6 +13,7 @@ const HOST = "legal-chunks-test.svc.pinecone.io";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
 const embeddingResponse = (vector: number[]) => json({ data: [{ index: 0, embedding: vector }] });
+const statsResponse = (count = index.documents.length) => json({ namespaces: { [namespaceFor(index)]: { vectorCount: count } } });
 
 function configure({ host = true } = {}) {
   process.env.OPENAI_API_KEY = "test-key";
@@ -22,17 +23,17 @@ function configure({ host = true } = {}) {
   if (host) process.env.PINECONE_INDEX_HOST = HOST;
 }
 
-/** Embedding first, then whatever Pinecone responses the test supplies, in order. */
+/** A complete namespace by default; query/error fixtures follow the readiness response. */
 function stubFetch(...pinecone: Response[]) {
-  const fetchMock = vi.fn().mockResolvedValueOnce(embeddingResponse([0, 0, 1, 0]));
+  const fetchMock = vi.fn().mockResolvedValueOnce(embeddingResponse([0, 0, 1, 0])).mockResolvedValueOnce(statsResponse());
   for (const response of pinecone) fetchMock.mockResolvedValueOnce(response);
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
 }
 
-const search = (queryType: "ANN" | "HYBRID" = "ANN") => localSearchChunks("because of sex", queryType, 10, index, undefined, pineconeVectorSearch);
+const search = (queryType: "ANN" | "HYBRID" | "FULL_TEXT" = "ANN") => localSearchChunks("because of sex", queryType, 10, index, undefined, pineconeVectorSearch);
 
-beforeEach(() => { resetPineconeHostCache(); });
+beforeEach(() => { resetPineconeHostCache(); resetPineconeReadinessCache(); });
 afterEach(() => {
   process.env = { ...originalEnv };
   vi.unstubAllGlobals();
@@ -47,7 +48,7 @@ describe.sequential("pinecone vector backend", () => {
     expect(chunks.map((chunk) => [chunk.chunkId, chunk.score])).toEqual([["c3", 0.91], ["c1", 0.12]]);
     expect(chunks[0].chunkText).toBe(index.documents[2].chunkText);
 
-    const [url, init] = fetchMock.mock.calls[1] as [string, RequestInit];
+    const [url, init] = fetchMock.mock.calls[2] as [string, RequestInit];
     expect(url).toBe(`https://${HOST}/query`);
     expect(init.headers).toMatchObject({ "Api-Key": "pc-test-key" });
     expect(url).not.toContain("pc-test-key");
@@ -58,7 +59,7 @@ describe.sequential("pinecone vector backend", () => {
     configure();
     const fetchMock = stubFetch(json({ matches: [{ id: "c3", score: 0.9 }, { id: "c4", score: 0.5 }] }));
     const chunks = await search("HYBRID");
-    expect(JSON.parse(String((fetchMock.mock.calls[1] as [string, RequestInit])[1].body)).topK).toBe(RRF_CANDIDATE_DEPTH);
+    expect(JSON.parse(String((fetchMock.mock.calls[2] as [string, RequestInit])[1].body)).topK).toBe(RRF_CANDIDATE_DEPTH);
     // c3 leads both lists, so fusion must keep it first; c4 matches "because of sex" in both.
     expect(chunks[0].chunkId).toBe("c3");
     expect(chunks.some((chunk) => chunk.chunkId === "c4")).toBe(true);
@@ -86,12 +87,12 @@ describe.sequential("pinecone vector backend", () => {
     expect(error.message).not.toContain("upstream detail");
   });
 
-  it("fails closed without a Pinecone key and makes no Pinecone call", async () => {
+  it.each(["ANN", "HYBRID"] as const)("fails closed without a Pinecone key before any paid embedding on %s", async (mode) => {
     configure();
     delete process.env.PINECONE_API_KEY;
     const fetchMock = stubFetch();
-    await expect(search()).rejects.toMatchObject({ status: 503, message: expect.stringMatching(/not configured/) });
-    expect(fetchMock).toHaveBeenCalledOnce();
+    await expect(search(mode)).rejects.toMatchObject({ status: 503, message: expect.stringMatching(/not configured/) });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("resolves the index host once per instance when no host is configured", async () => {
@@ -99,6 +100,7 @@ describe.sequential("pinecone vector backend", () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(embeddingResponse([0, 0, 1, 0]))
       .mockResolvedValueOnce(json({ name: "legal-chunks", dimension: 4, metric: "cosine", host: HOST, status: { ready: true, state: "Ready" } }))
+      .mockResolvedValueOnce(statsResponse())
       .mockResolvedValueOnce(json({ matches: [{ id: "c3", score: 0.9 }] }))
       .mockResolvedValueOnce(embeddingResponse([0, 0, 1, 0]))
       .mockResolvedValueOnce(json({ matches: [{ id: "c3", score: 0.9 }] }));
@@ -108,6 +110,35 @@ describe.sequential("pinecone vector backend", () => {
     const urls = fetchMock.mock.calls.map(([url]) => String(url));
     expect(urls.filter((url) => url === "https://api.pinecone.io/indexes/legal-chunks")).toHaveLength(1);
     expect(urls.filter((url) => url === `https://${HOST}/query`)).toHaveLength(2);
+    expect(urls.filter((url) => url === `https://${HOST}/describe_index_stats`)).toHaveLength(1);
+  });
+
+  it.each([0, index.documents.length - 1, index.documents.length + 1])("refuses namespace count %i before searching known but incomplete vectors", async (count) => {
+    configure();
+    const fetchMock = vi.fn().mockResolvedValueOnce(statsResponse(count));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(pineconeVectorSearch(index, [0, 0, 1, 0], 3)).rejects.toMatchObject({ status: 503, message: expect.stringMatching(/incomplete or out of sync/) });
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock.mock.calls[0][0]).toBe(`https://${HOST}/describe_index_stats`);
+  });
+
+  it("rechecks failed readiness after an upload completes, then caches success", async () => {
+    configure();
+    const fetchMock = vi.fn().mockResolvedValueOnce(statsResponse(1)).mockResolvedValueOnce(statsResponse())
+      .mockImplementation(() => Promise.resolve(json({ matches: [{ id: "c3", score: 0.9 }] })));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(pineconeVectorSearch(index, [0, 0, 1, 0], 3)).rejects.toMatchObject({ status: 503 });
+    await expect(pineconeVectorSearch(index, [0, 0, 1, 0], 3)).resolves.toHaveLength(1);
+    await pineconeVectorSearch(index, [0, 0, 1, 0], 3);
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/describe_index_stats"))).toHaveLength(2);
+  });
+
+  it("leaves full text search usable without a Pinecone key or any network calls", async () => {
+    configure();
+    delete process.env.PINECONE_API_KEY;
+    const fetchMock = stubFetch();
+    await expect(search("FULL_TEXT")).resolves.not.toHaveLength(0);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("derives a new namespace when the corpus or the embedding space changes", () => {

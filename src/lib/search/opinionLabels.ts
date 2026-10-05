@@ -5,7 +5,7 @@ const LABELS: Record<OpinionSection["type"], string> = {
   concurrence: "Concurrence",
   dissent: "Dissent",
   syllabus: "Syllabus (headnote)",
-  front_matter: "Counsel / front matter",
+  front_matter: "Counsel and front matter",
 };
 
 /** Page-level attribution, not a claim that every sentence on a boundary page has one author. */

@@ -6,13 +6,14 @@ import type { SummarySource } from "../src/lib/chat/summaryTypes";
 /** The component's state, recorded rather than rendered. Every assertion below is about what the
  *  page would be showing, not about how the module is written. */
 function sink() {
-  const state = { loading: false, error: "", completed: undefined as CompletedSearch | undefined, summary: "", summarySources: [] as SummarySource[], summaryError: "", summaryLoading: false };
+  const state = { loading: false, error: "", completed: undefined as CompletedSearch | undefined, summary: "", summarySources: [] as SummarySource[], summaryNotice: "", summaryError: "", summaryLoading: false };
   const api: SearchSessionSink = {
     setLoading: (value) => { state.loading = value; },
     setError: (value) => { state.error = value; },
     setCompletedSearch: (value) => { state.completed = value; },
     setSummary: (value) => { state.summary = value; },
     setSummarySources: (value) => { state.summarySources = value; },
+    setSummaryNotice: (value) => { state.summaryNotice = value; },
     setSummaryError: (value) => { state.summaryError = value; },
     setSummaryLoading: (value) => { state.summaryLoading = value; },
   };
@@ -30,7 +31,7 @@ function defer(): Deferred {
 const CASE: CaseResult = { rank: 1, caseId: "burlington_white", caseName: "Burlington Northern v. White", citation: "548 U.S. 53", pageStart: 1, pageEnd: 2, bestPassage: "passage", method: "HYBRID", passages: [] };
 const searchBody = (mock = false) => new Response(JSON.stringify({ results: [CASE], mock }), { status: 200 });
 const SOURCE: SummarySource = { id: 1, caseName: CASE.caseName, citation: CASE.citation, pageStart: 1, pageEnd: 2 };
-const summaryBody = (text: string) => new Response(JSON.stringify({ summary: text, sources: [SOURCE] }), { status: 200 });
+const summaryBody = (text: string, notice?: string) => new Response(JSON.stringify({ summary: text, sources: [SOURCE], notice }), { status: 200 });
 
 /** Queues one deferred per request, keyed by route, so a test can settle A after B has started. */
 function router() {
@@ -64,14 +65,16 @@ describe("search and summary sequencing", () => {
 
     const summarizing = session.summarize();
     expect(state.summaryLoading).toBe(true);
-    routes.summarize[0].resolve(summaryBody("grounded synthesis"));
+    routes.summarize[0].resolve(summaryBody("grounded synthesis", "Some paragraphs were omitted."));
     await summarizing;
     expect(state.summary).toBe("grounded synthesis");
     expect(state.summarySources).toEqual([SOURCE]);
+    expect(state.summaryNotice).toBe("Some paragraphs were omitted.");
     expect(state.summaryError).toBe("");
     expect(state.summaryLoading).toBe(false);
     const replacement = session.search("replacement query", "FULL_TEXT");
     expect(state.summarySources).toEqual([]);
+    expect(state.summaryNotice).toBe("");
     expect(state.summary).toBe("");
     routes.search[1].resolve(searchBody());
     await replacement;
@@ -94,11 +97,12 @@ describe("search and summary sequencing", () => {
     await searchB;
     expect(state.completed?.query).toBe("query B");
 
-    routes.summarize[0].resolve(summaryBody("synthesis of query A"));
+    routes.summarize[0].resolve(summaryBody("synthesis of query A", "Stale notice"));
     await summaryA;
 
     expect(state.summary).toBe("");
     expect(state.summarySources).toEqual([]);
+    expect(state.summaryNotice).toBe("");
     expect(state.summaryError).toBe("");
     expect(state.summaryLoading).toBe(false);
   });

@@ -13,7 +13,9 @@
  * the namespace name is derived from both, so the runtime refuses to search until you do.
  *
  * Options:
- *   --prune   delete namespaces left behind by earlier corpus builds
+ *   --prune corpus-<24 hex characters>   delete only this explicitly named unused namespace
+ *   Repeat --prune for additional namespaces. Confirm no production or preview deployment uses
+ *   any requested namespace; an older build can still be active.
  */
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,6 +24,7 @@ import { verifyVectorProbe } from "@/lib/pinecone/probe";
 import { namespaceFor } from "@/lib/pinecone/search";
 import { DEFAULT_PINECONE_CLOUD, DEFAULT_PINECONE_REGION, describeIndex, PINECONE_CONTROL_URL, PineconeError, pineconeConfig, pineconeRequest, queryVectors, resolveHost, type PineconeConfig, type PineconeIndexDescription } from "@/lib/pinecone/client";
 import { loadEnvFiles } from "./lib/env";
+import { requestedPruneNamespaces, validatePruneNamespaces } from "./lib/pineconeMaintenance";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 loadEnvFiles(ROOT);
@@ -55,11 +58,13 @@ async function ensureIndex(config: PineconeConfig, dimensions: number): Promise<
 type IndexStats = { namespaces?: Record<string, { vectorCount?: number }> };
 
 async function main(): Promise<number> {
+  const prune = requestedPruneNamespaces(process.argv.slice(2));
   const config = pineconeConfig();
   if (!config) throw new Error("PINECONE_API_KEY is required. Set it in .env.local.");
   const index = await readLocalIndex();
   const { docCount, dimensions, data } = index.embeddings;
   const namespace = namespaceFor(index);
+  validatePruneNamespaces(namespace, prune);
 
   await ensureIndex(config, dimensions);
   const host = `https://${await resolveHost(config, TIMEOUT_MS)}`;
@@ -99,13 +104,12 @@ async function main(): Promise<number> {
   }
   console.log("Self-check passed: candidate coverage and cosine scores verified on 3 probes. This is not a relevance benchmark.");
 
-  const stale = Object.keys(stats.namespaces ?? {}).filter((name) => name !== namespace);
-  if (stale.length > 0 && process.argv.includes("--prune")) {
-    for (const name of stale) await pineconeRequest(config, `${host}/vectors/delete`, { method: "POST", body: { namespace: name, deleteAll: true } }, TIMEOUT_MS);
-    console.log(`Pruned ${stale.length} namespace(s) from earlier builds.`);
-  } else if (stale.length > 0) {
-    console.log(`${stale.length} namespace(s) from earlier builds remain; pass --prune to delete them.`);
+  if (prune.length > 0) {
+    for (const name of prune) await pineconeRequest(config, `${host}/vectors/delete`, { method: "POST", body: { namespace: name, deleteAll: true } }, TIMEOUT_MS);
+    console.log(`Pruned ${prune.length} explicitly requested namespace(s).`);
   }
+  const retained = Object.keys(stats.namespaces ?? {}).filter((name) => name !== namespace && !prune.includes(name));
+  if (retained.length > 0) console.log(`${retained.length} other namespace(s) retained. Only use --prune <namespace> after confirming that namespace is unused by all deployments.`);
   console.log("\nSet SEARCH_BACKEND=pinecone to search through this index.");
   return 0;
 }

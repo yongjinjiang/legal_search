@@ -10,8 +10,16 @@ import { collapseToCases } from "../src/lib/search/caseRanking";
 import { corpusDigest, readLocalIndex } from "../src/lib/search/localIndex";
 import { attachOpinionProvenance } from "../src/lib/search/opinionProvenance";
 import type { IndexDocument } from "../src/lib/search/artifacts";
+import { opinionLabel } from "../src/lib/search/opinionLabels";
 
 describe("reviewed source attribution", () => {
+  it("uses an unambiguous label for three mixed sections including front matter", () => {
+    expect(opinionLabel([
+      { type: "syllabus", pageStart: 1, pageEnd: 1 },
+      { type: "front_matter", pageStart: 1, pageEnd: 1 },
+      { type: "majority", author: "Breyer", pageStart: 1, pageEnd: 1 },
+    ])).toBe("Mixed sections: Syllabus (headnote) / Counsel and front matter / Court opinion — Breyer");
+  });
   it("covers all corpus pages and uses the canonical source URLs without changing text or digest", async () => {
     const metadata = parseCsv(readFileSync("data/metadata/metadata.csv", "utf8"));
     expect(Object.keys(reviewed.cases)).toHaveLength(8);

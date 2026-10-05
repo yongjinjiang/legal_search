@@ -60,7 +60,11 @@ still fill the candidate chunks and exclude a shorter case before collapse runs.
 step with a Pinecone serverless cosine query. BM25, the document table, RRF, and case collapse
 still run in the application. FULL_TEXT stays entirely local in either mode.
 `scripts/index_pinecone.ts` uploads the committed vectors to a namespace derived from the corpus
-digest and embedding configuration; stale namespaces and unknown chunk IDs are refused. This is
+digest and embedding configuration. A first-use namespace count check detects partial uploads,
+caches success per warm instance, and retries failures; it does not detect later external changes
+to an already checked namespace. Unknown returned chunk IDs are refused. Missing Pinecone keys
+fail before a paid query embedding. Cleanup requires explicit unused namespace names, after all
+production and preview builds using them have been retired or updated. This is
 an implemented option, not a planned feature. `databricks` remains an optional Phase 1 comparison
 adapter. The guide receives this server instance's actual backend and mock setting as trusted
 runtime context; configuration does not prove that a remote service is currently reachable.
@@ -127,7 +131,13 @@ The optional research summary re-runs retrieval server-side, selects at most eig
 round-robin across at most five cases, and generates only after an explicit click. Its prompt
 carries section attribution and numbered passage IDs. The model returns JSON paragraphs
 and supporting IDs; the server validates them and supplies the original PDF ranges and links
-for a separate source list. Inline page citations or invalid IDs fail safely. These checks
+for a separate source list. Invalid IDs or malformed drafts fail safely. Paragraphs with recognised
+inline PDF page references, relative or reporter pinpoints, numbered markers or URLs are omitted
+with a visible notice; other paragraphs remain without another billed completion. The guard
+allows bare “p. 385” references in secondary-authority quotations and is not a complete citation
+parser. Summary calls
+request JSON mode on the official OpenAI endpoint; a single JSON code fence is also accepted with
+strict validation. Opinion-attribution rules are prompt instructions, not server fact checks. These checks
 validate source identity, not the truth of generated claims. Dissent and concurrence must be attributed to
 their authors; a syllabus or dissent alone cannot verify the Court's holding. Mixed or unknown
 sections require explicit uncertainty. These controls improve grounding but do not replace

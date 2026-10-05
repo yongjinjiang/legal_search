@@ -12,6 +12,7 @@ export type SearchSessionSink = {
   setCompletedSearch(value: CompletedSearch | undefined): void;
   setSummary(value: string): void;
   setSummarySources(value: SummarySource[]): void;
+  setSummaryNotice(value: string): void;
   setSummaryError(value: string): void;
   setSummaryLoading(value: boolean): void;
 };
@@ -69,6 +70,7 @@ export class SearchSession {
     this.sink.setError("");
     this.sink.setSummary("");
     this.sink.setSummarySources([]);
+    this.sink.setSummaryNotice("");
     this.sink.setSummaryError("");
     this.sink.setSummaryLoading(false);
     try {
@@ -101,6 +103,7 @@ export class SearchSession {
     this.sink.setSummaryError("");
     this.sink.setSummary("");
     this.sink.setSummarySources([]);
+    this.sink.setSummaryNotice("");
     try {
       const response = await fetch("/api/summarize", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: target.query, queryType: target.method }), signal: controller.signal });
       if (!response.ok) throw new Error(await readError(response, "The research summary could not be generated."));
@@ -108,6 +111,7 @@ export class SearchSession {
       if (!this.isCurrentSummary(id, search)) return;
       this.sink.setSummary(data.summary);
       this.sink.setSummarySources(data.sources ?? []);
+      this.sink.setSummaryNotice(data.notice ?? "");
     } catch (error) {
       if (!this.isCurrentSummary(id, search)) return;
       this.sink.setSummaryError(error instanceof Error ? error.message : "The research summary could not be generated.");

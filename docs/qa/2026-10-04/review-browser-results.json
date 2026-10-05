@@ -1,0 +1,54 @@
+{
+  "generatedAt": "2026-10-05T05:44:12.528Z",
+  "guideAnswer": "Short answer\n- The summary-generation guard does not verify the truth of claims. It validates source identity and enforces formatting/safety rules, but it does not fact‑check substantive legal claims against the opinion text.\n- Reporter pinpoints, inline PDF page references, numbered markers, and URLs are treated specially: paragraphs that contain recognized instances of these are omitted from the generated summary and replaced with a visible notice.\n- The guard is not a full citation parser; it “allows” secondary‑authority page citations in the sense that it does not ban all secondary citations, but it has only limited recognition and will omit paragraphs when it detects certain inline pinpoint or page‑reference patterns.\n\nDetails from the project documentation (what is actually implemented)\n- Validation scope: The server-side checks validate (a) source identity (that paragraph IDs map to the committed chunks and PDFs) and (b) structural/formatting constraints from the prompt (JSON mode, numbered passage IDs, etc.). They do not perform semantic fact‑checking or verify the truth of individual legal claims in generated paragraphs.\n- Reporter pinpoints and page references: Paragraphs that include “recognised inline PDF page references, relative or reporter pinpoints, numbered markers or URLs” are omitted from the model’s output and replaced with a visible notice. This is an implemented guard to avoid producing potentially misleading pinpoint citations automatically.\n- Secondary authorities: The system “allows secondary‑authority page citations” in the sense that it does not categorically reject secondary citations, but the citation recognition is limited. The documentation explicitly says it is not a complete citation parser. In short, some secondary‑authority citations may pass through, others may trigger omission if they match the recognized patterns.\n- Attribution rules: The prompt enforces opinion‑attribution rules (e.g., dissents and concurrences must be attributed to their authors; a syllabus or dissent alone cannot be presented as the Court’s holding). Those are prompt-level controls, not independent factual verification against the PDF.\n- Technical failure modes: If the model returns invalid IDs or malformed JSON, the server-side validation fails the summary safely; no malformed or unverifiable paragraphs are accepted.\n\nLimitations (what this does not do)\n- It does not verify the truth or legal correctness of claims made by the model. Validation is about sources, IDs, and formatting, not substantive fact‑checking.\n- It is not a comprehensive citation parser or pinpoint verifier; some citations may slip through or be omitted conservatively.\n- The omission rule is pattern-based (recognized inline page references or reporter pinpoints). The documentation does not enumerate exactly which reporter formats are recognized, so behavior can vary with citation formatting.\n\nPractical implication for the untrusted retrieval state you supplied\n- If a generated paragraph included a reporter pinpoint or inline PDF page reference in a recognized pattern, the summary guard would omit that paragraph and show a visible notice instead of the paragraph.\n- Whether a secondary‑authority quotation (for example, a quote of Restatement text or another case’s pinpoint) is omitted depends on whether it matches the recognition patterns; the guard does not substantively verify the quoted content.\n\nI am not providing legal advice. If you want, I can (a) point to the exact guard behaviors in the codebase if available, or (b) describe how you might test what pinpoint/citation patterns the guard recognizes.",
+  "kind": "browser-review-fixes-smoke",
+  "notice": null,
+  "results": 2,
+  "sources": [
+    {
+      "href": "https://tile.loc.gov/storage-services/service/ll/usrep/usrep570/usrep570338/usrep570338.pdf#page=46",
+      "text": "[1] University of Texas Southwestern Medical Center v. Nassar · 570 U.S. 338 (2013)PDF pages 46–48Dissent — GinsburgOpen source PDF ↗"
+    },
+    {
+      "href": "https://www.supremecourt.gov/opinions/19pdf/17-1618_hfci.pdf#page=10",
+      "text": "[2] Bostock v. Clayton County · 590 U.S. 644 (2020)PDF pages 10–11Court opinion — GorsuchOpen source PDF ↗"
+    },
+    {
+      "href": "https://tile.loc.gov/storage-services/service/ll/usrep/usrep570/usrep570338/usrep570338.pdf#page=45",
+      "text": "[3] University of Texas Southwestern Medical Center v. Nassar · 570 U.S. 338 (2013)PDF pages 45–46Dissent — GinsburgOpen source PDF ↗"
+    },
+    {
+      "href": "https://tile.loc.gov/storage-services/service/ll/usrep/usrep570/usrep570338/usrep570338.pdf#page=2",
+      "text": "[4] University of Texas Southwestern Medical Center v. Nassar · 570 U.S. 338 (2013)PDF pages 2–3Mixed sections: Syllabus (headnote) / Counsel and front matterOpen source PDF ↗"
+    },
+    {
+      "href": "https://tile.loc.gov/storage-services/service/ll/usrep/usrep570/usrep570338/usrep570338.pdf#page=8",
+      "text": "[5] University of Texas Southwestern Medical Center v. Nassar · 570 U.S. 338 (2013)PDF pages 8–9Court opinion — KennedyOpen source PDF ↗"
+    },
+    {
+      "href": "https://tile.loc.gov/storage-services/service/ll/usrep/usrep570/usrep570338/usrep570338.pdf#page=42",
+      "text": "[6] University of Texas Southwestern Medical Center v. Nassar · 570 U.S. 338 (2013)PDF pages 42–43Dissent — GinsburgOpen source PDF ↗"
+    },
+    {
+      "href": "https://tile.loc.gov/storage-services/service/ll/usrep/usrep570/usrep570338/usrep570338.pdf#page=1",
+      "text": "[7] University of Texas Southwestern Medical Center v. Nassar · 570 U.S. 338 (2013)PDF pages 1–2Syllabus (headnote)Open source PDF ↗"
+    },
+    {
+      "href": "https://tile.loc.gov/storage-services/service/ll/usrep/usrep570/usrep570338/usrep570338.pdf#page=23",
+      "text": "[8] University of Texas Southwestern Medical Center v. Nassar · 570 U.S. 338 (2013)PDF pages 23–24Court opinion — KennedyOpen source PDF ↗"
+    }
+  ],
+  "summaryChars": 2409,
+  "url": "http://127.0.0.1:3000/#search",
+  "viewport": {
+    "scrollWidth": 1280,
+    "width": 1280
+  },
+  "mobile": {
+    "width": 390,
+    "scrollWidth": 390,
+    "summaryWidth": 346,
+    "sources": 8
+  },
+  "limitations": "Pinecone search, source presentation and guide description smoke checks. These do not establish legal accuracy. Omission/error paths are covered by deterministic route and session tests."
+}

@@ -3,7 +3,7 @@ export class LlmServiceError extends Error {
 }
 
 export type LlmMessage = { role: "system" | "user"; content: string };
-export type CompletionOptions = { maxOutputTokens: number; timeoutMs: number };
+export type CompletionOptions = { maxOutputTokens: number; timeoutMs: number; outputFormat?: "json" };
 
 /** The only surface the guide and the research summary depend on. Provider choice is a server
  *  configuration detail; no model name is referenced from UI or retrieval code. */

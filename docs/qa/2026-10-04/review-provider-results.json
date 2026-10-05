@@ -1,0 +1,134 @@
+{
+  "kind": "live-compatibility-smoke",
+  "generatedAt": "2026-10-05T05:39:26.385Z",
+  "model": "gpt-5-mini",
+  "reasoningEffort": "low",
+  "embeddingModel": "text-embedding-3-large",
+  "embeddingDimensions": 1024,
+  "summaryPromptSha256": "17c3c8272683fcd9",
+  "guideContextFiles": [
+    "PROJECT_CONTEXT_SUMMARY.md",
+    "TECHNICAL_DEEP_DIVE.md",
+    "EVALUATION_RESULTS.md",
+    "FUTURE_DIRECTIONS.md"
+  ],
+  "limits": {
+    "MAX_SUMMARY_OUTPUT_TOKENS": 4000,
+    "MAX_GUIDE_OUTPUT_TOKENS": 3200,
+    "CHAT_TIMEOUT_MS": 50000,
+    "SUMMARY_TIMEOUT_MS": 50000,
+    "EMBEDDING_TIMEOUT_MS": 10000,
+    "LLM_ROUTE_BUDGET_MS": 55000
+  },
+  "repetitions": 3,
+  "billedCalls": 11,
+  "totalMs": 112292,
+  "checks": [
+    {
+      "name": "embedding dimensions",
+      "ok": true,
+      "detail": "1024 of 1024"
+    },
+    {
+      "name": "embedding finite",
+      "ok": true,
+      "detail": "1024 values"
+    },
+    {
+      "name": "embedding latency",
+      "ok": true,
+      "detail": "1441ms < 10000ms"
+    },
+    {
+      "name": "summary 1 non-empty",
+      "ok": true,
+      "detail": "2198 chars"
+    },
+    {
+      "name": "summary 1 within budget",
+      "ok": true,
+      "detail": "13006ms < 50000ms"
+    },
+    {
+      "name": "summary 1 source references",
+      "ok": true,
+      "detail": "6 references resolved from server passages; prose accuracy is not evaluated"
+    },
+    {
+      "name": "summary 1 complete presentation",
+      "ok": true,
+      "detail": "No paragraphs omitted by the reference guard"
+    },
+    {
+      "name": "summary 2 non-empty",
+      "ok": true,
+      "detail": "2443 chars"
+    },
+    {
+      "name": "summary 2 within budget",
+      "ok": true,
+      "detail": "11489ms < 50000ms"
+    },
+    {
+      "name": "summary 2 source references",
+      "ok": true,
+      "detail": "6 references resolved from server passages; prose accuracy is not evaluated"
+    },
+    {
+      "name": "summary 2 complete presentation",
+      "ok": true,
+      "detail": "No paragraphs omitted by the reference guard"
+    },
+    {
+      "name": "summary 3 non-empty",
+      "ok": true,
+      "detail": "2286 chars"
+    },
+    {
+      "name": "summary 3 within budget",
+      "ok": true,
+      "detail": "10636ms < 50000ms"
+    },
+    {
+      "name": "summary 3 source references",
+      "ok": true,
+      "detail": "7 references resolved from server passages; prose accuracy is not evaluated"
+    },
+    {
+      "name": "summary 3 complete presentation",
+      "ok": true,
+      "detail": "No paragraphs omitted by the reference guard"
+    },
+    {
+      "name": "guide 1 non-empty",
+      "ok": true,
+      "detail": "9653 chars"
+    },
+    {
+      "name": "guide 1 within budget",
+      "ok": true,
+      "detail": "22678ms < 50000ms"
+    },
+    {
+      "name": "guide 2 non-empty",
+      "ok": true,
+      "detail": "9189 chars"
+    },
+    {
+      "name": "guide 2 within budget",
+      "ok": true,
+      "detail": "21674ms < 50000ms"
+    },
+    {
+      "name": "guide 3 non-empty",
+      "ok": true,
+      "detail": "10075 chars"
+    },
+    {
+      "name": "guide 3 within budget",
+      "ok": true,
+      "detail": "26927ms < 50000ms"
+    }
+  ],
+  "passed": true
+}

@@ -95,7 +95,7 @@ async function main(): Promise<number> {
       const t = Date.now();
       let text = "";
       try {
-        text = await llm.complete([{ role: "system", content: route.system }, { role: "user", content: route.user }], { maxOutputTokens: route.cap, timeoutMs: allowed });
+        text = await llm.complete([{ role: "system", content: route.system }, { role: "user", content: route.user }], { maxOutputTokens: route.cap, timeoutMs: allowed, ...(route.ground ? { outputFormat: "json" as const } : {}) });
       } catch (error) {
         record(`${route.label} ${attempt} completion`, false, `${(error as Error).message} (allowed ${allowed}ms, elapsed ${Date.now() - t}ms)`);
         continue;
@@ -107,6 +107,7 @@ async function main(): Promise<number> {
         try {
           const resolved = resolveSummaryDraft(text, results);
           record(`${route.label} ${attempt} source references`, true, `${resolved.sources.length} references resolved from server passages; prose accuracy is not evaluated`);
+          record(`${route.label} ${attempt} complete presentation`, !resolved.notice, resolved.notice ?? "No paragraphs omitted by the reference guard");
         } catch (error) {
           record(`${route.label} ${attempt} source references`, false, (error as Error).message);
         }

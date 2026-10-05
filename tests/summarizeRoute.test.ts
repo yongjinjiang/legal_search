@@ -75,6 +75,25 @@ describe.sequential("research summary endpoint", () => {
     expect(payload).toEqual({ error: "The summary could not be verified against its source references. Try again." });
     expect(JSON.stringify(payload)).not.toContain("UNVERIFIED MODEL CLAIM");
   });
+
+  it("returns retained paragraphs and an omission notice without a second completion", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    process.env.MOCK_SEARCH = "true";
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      choices: [{ message: { content: JSON.stringify({ blocks: [
+        { text: "Unverified pinpoint: 570 U.S., at 352.", citations: [2] },
+        { text: "The passage discusses causation.", citations: [1] },
+      ] }) } }],
+    }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const response = await summarize(post({ query: "but-for causation", queryType: "FULL_TEXT" }));
+    expect(response.status).toBe(200);
+    const payload = await response.json();
+    expect(payload).toMatchObject({ summary: "The passage discusses causation. [1]", notice: expect.stringMatching(/omitted/), sources: [{ id: 1 }] });
+    expect(JSON.stringify(payload)).not.toContain("Unverified pinpoint");
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
 });
 
 describe.sequential("search stays pure retrieval", () => {

@@ -30,6 +30,7 @@ export function Explorer() {
   const [query, setQuery] = useState(""); const [method, setMethod] = useState<QueryType>("HYBRID"); const [completedSearch, setCompletedSearch] = useState<CompletedSearch | undefined>(); const [loading, setLoading] = useState(false); const [error, setError] = useState("");
   const [summary, setSummary] = useState(""); const [summaryLoading, setSummaryLoading] = useState(false); const [summaryError, setSummaryError] = useState("");
   const [summarySources, setSummarySources] = useState<SummarySource[]>([]);
+  const [summaryNotice, setSummaryNotice] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]); const [chatInput, setChatInput] = useState(""); const [mode, setMode] = useState<"standard" | "detailed">("standard"); const [chatLoading, setChatLoading] = useState(false); const chatRef = useRef<HTMLTextAreaElement>(null); const chatLogRef = useRef<HTMLDivElement>(null); const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   // The log scrolls within a bounded panel, so new replies would otherwise land below the fold.
   useEffect(() => { const log = chatLogRef.current; if (log) log.scrollTop = log.scrollHeight; }, [messages, chatLoading]);
@@ -44,7 +45,7 @@ export function Explorer() {
   // below the results, which is what keeps an ordinary search free of generation cost.
   // See src/lib/ui/searchSession.ts. A lazy initializer, so the session is constructed once and
   // never read during render.
-  const [session] = useState(() => new SearchSession({ setLoading, setError, setCompletedSearch, setSummary, setSummarySources, setSummaryError, setSummaryLoading }));
+  const [session] = useState(() => new SearchSession({ setLoading, setError, setCompletedSearch, setSummary, setSummarySources, setSummaryNotice, setSummaryError, setSummaryLoading }));
   function togglePassage(caseId: string) { setExpanded((current) => { const next = new Set(current); if (!next.delete(caseId)) next.add(caseId); return next; }); }
   function askWhy(result: CaseResult) {
     const question = `Why did ${result.caseName} rank ${result.rank} for this query, and what retrieval signal likely helped?`; setChatInput(question);
@@ -84,6 +85,7 @@ export function Explorer() {
             <div className="summary-panel">
               <div className="summary-head"><div><span className="section-label"><span>OPTIONAL</span> Grounded synthesis</span><p>Sends the highest-ranked passages to a language model. Retrieval above ran without one.</p></div><button onClick={() => void session.summarize()} disabled={summaryLoading || loading}>{summaryLoading ? "Generating…" : "Generate research summary"}<span>↗</span></button></div>
               {summaryError && <div className="notice error">{summaryError}</div>}
+              {summaryNotice && <div className="notice" role="status">{summaryNotice}</div>}
               {summary && <div className="summary-body"><p>{summary}</p><div className="summary-sources" aria-label="Summary source references">{summarySources.map((source) => <div key={source.id}><b>[{source.id}] {source.caseName}</b><span> · {source.citation}</span><PassageSource {...source}/></div>)}</div><small>Generated from the retrieved passages only. Verify against the opinions before relying on it. Not legal advice.</small></div>}
             </div>
           </div>}

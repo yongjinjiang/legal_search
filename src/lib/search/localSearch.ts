@@ -46,7 +46,7 @@ async function embedQuery(query: string, index: LocalSearchIndex, deadlineAt?: n
 
 /** The nearest-neighbour step. Local by default; the optional Pinecone backend swaps in a remote
  *  query that returns the same rows, so lexical ranking and fusion never depend on where it ran. */
-export type VectorSearch = (index: LocalSearchIndex, queryVector: number[], limit: number, deadlineAt?: number) => Promise<ScoredDoc[]>;
+export type VectorSearch = ((index: LocalSearchIndex, queryVector: number[], limit: number, deadlineAt?: number) => Promise<ScoredDoc[]>) & { assertConfigured?: () => void };
 
 const scanLocally: VectorSearch = async (index, queryVector, limit) => searchEmbeddings(index.embeddings, queryVector, limit);
 
@@ -69,6 +69,9 @@ export async function localSearchChunks(query: string, queryType: QueryType, num
   }
 
   if (queryType === "FULL_TEXT") return toChunks(index, searchBm25(index.bm25, query, numResults));
+
+  // Reject a missing remote backend configuration before paying for the query embedding.
+  vectorSearch.assertConfigured?.();
 
   const semantic: ScoredDoc[] = await vectorSearch(index, await embedQuery(query, index, deadlineAt), queryType === "ANN" ? numResults : RRF_CANDIDATE_DEPTH, deadlineAt);
   if (queryType === "ANN") return toChunks(index, semantic);
