@@ -323,6 +323,8 @@ unauthenticated caller cannot trigger paid embedding calls.
 
 ## Security and limitations
 
+For supported versions and private vulnerability reporting, see [SECURITY.md](SECURITY.md).
+
 Credentials and context assembly stay on the server. Query length, question length, result count,
 passage count, output-token budgets, and request durations are capped in a single module, because
 a bound that exists only in a prompt string or a UI attribute is a bound a direct API caller does
