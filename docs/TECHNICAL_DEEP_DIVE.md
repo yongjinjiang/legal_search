@@ -163,7 +163,7 @@ general.
 adapter. Pinecone mode makes one query embedding and a remote cosine-index query for ANN and
 HYBRID. BM25, RRF, document lookup and case collapse remain local; FULL_TEXT never calls Pinecone.
 The offline uploader uses the existing normalized 1024-dimensional vectors, creates a serverless
-index if necessary, and verifies vector visibility and probe ordering. A corpus/model-specific
+index if necessary, and verifies vector count, candidate identity and cosine scores with a 0.0005 tolerance. A corpus/model-specific
 namespace prevents using an old corpus after a rebuild. Unknown returned IDs fail explicitly.
 There is no automatic fallback to local vectors or mock results after a Pinecone failure.
 
@@ -184,7 +184,10 @@ do not establish sentence-level authorship on shared pages or convert PDF pages 
 pinpoint citations.
 
 The summary prompt receives these section labels and author names for each selected passage.
-It requires numbered passage IDs and separate exact PDF ranges, without merging citations.
+The model returns JSON paragraphs and numbered passage IDs, validated before display.
+The server resolves used IDs to case names, original PDF ranges, labels and links; the UI
+keeps each reference separate. Invalid IDs or model-authored inline page citations fail safely.
+This checks citation identity, not the accuracy of each prose claim.
 It must distinguish dissent/concurrence from the Court's reasoning, avoid treating a headnote as
 an opinion, and state when a majority holding cannot be verified from supplied Court passages.
 At most eight passages, 1,800 characters each, are selected round-robin across five cases.
@@ -195,3 +198,9 @@ other search fields are removed before serialization, keeping normal requests be
 HTTP limit. The server retains schema validation, prompt trimming, and untrusted delimiters.
 An empty result array is a completed zero-match search, with a visible explanation and a full-text
 retry action that runs semantic search on the completed query.
+
+Pinecone host discovery and vector query consume a shared total deadline, including body reads.
+Concurrent discovery waiters keep their own waiting budgets. The uploader upserts an unchanged
+corpus without clearing its active namespace; three score probes allow near-tie swaps but reject
+unknown/duplicate IDs, incorrect scores, material ordering inversions and missing stronger
+candidates. Exact ordering is diagnostic, not an upload acceptance criterion.

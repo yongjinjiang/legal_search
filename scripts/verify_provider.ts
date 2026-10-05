@@ -26,7 +26,7 @@ import { writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { SUMMARY_SYSTEM_PROMPT, buildSummaryPrompt } from "@/lib/chat/summary";
+import { SUMMARY_SYSTEM_PROMPT, buildSummaryPrompt, resolveSummaryDraft } from "@/lib/chat/summary";
 import { GUIDE_SYSTEM_PREAMBLE, guideRuntimeContext } from "@/lib/chat/guide";
 import { contextFiles, loadProjectContext } from "@/lib/chat/contextLoader";
 import { embeddingProvider } from "@/lib/embeddings/openai";
@@ -49,15 +49,6 @@ const GUIDE_QUESTION = "Explain the retrieval architecture end to end, why it ch
 type Check = { name: string; ok: boolean; detail: string };
 const checks: Check[] = [];
 const record = (name: string, ok: boolean, detail: string) => { checks.push({ name, ok, detail }); console.log(`  ${ok ? "PASS" : "FAIL"}  ${name}  ${detail}`); };
-
-/** Structural grounding checks only. Exact wording and citation counts vary run to run; what must
- *  hold is that the answer stays inside the supplied passages. */
-function groundingFaults(text: string, caseNames: string[], pageRanges: string[]): string[] {
-  const faults: string[] = [];
-  if (!caseNames.some((name) => text.includes(name.split(" v.")[0]))) faults.push("no supplied case named");
-  if (!pageRanges.some((range) => text.includes(range))) faults.push("no supplied page range cited");
-  return faults;
-}
 
 async function main(): Promise<number> {
   if (!process.argv.includes("--live")) {
@@ -87,8 +78,6 @@ async function main(): Promise<number> {
   // Real assembled prompts, not synthetic ones — prompt growth is one of the drifts this catches.
   const { results } = await searchCases(QUERY, "HYBRID");
   const summaryPrompt = buildSummaryPrompt(QUERY, results);
-  const caseNames = results.map((result) => result.caseName);
-  const pageRanges = results.flatMap((result) => result.passages.map((passage) => `${passage.pageStart}–${passage.pageEnd}`));
   const guideContext = await loadProjectContext("detailed");
 
   const routes = [
@@ -115,8 +104,12 @@ async function main(): Promise<number> {
       record(`${route.label} ${attempt} non-empty`, text.trim().length > 0, `${text.length} chars`);
       record(`${route.label} ${attempt} within budget`, ms < allowed, `${ms}ms < ${allowed}ms`);
       if (route.ground) {
-        const faults = groundingFaults(text, caseNames, pageRanges);
-        record(`${route.label} ${attempt} grounding`, faults.length === 0, faults.length ? faults.join("; ") : "names a supplied case and cites a supplied page range");
+        try {
+          const resolved = resolveSummaryDraft(text, results);
+          record(`${route.label} ${attempt} source references`, true, `${resolved.sources.length} references resolved from server passages; prose accuracy is not evaluated`);
+        } catch (error) {
+          record(`${route.label} ${attempt} source references`, false, (error as Error).message);
+        }
       }
     }
   }

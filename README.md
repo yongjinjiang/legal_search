@@ -177,8 +177,9 @@ because it makes billed API calls, and prints the call count before starting. It
 real assembled prompts and the exact configured profile: one query embedding checked for width,
 finiteness, and latency, then three summary and three guide completions checked for non-empty
 output, a finish reason that is not `length`, usage inside the configured cap, and latency inside
-the route's remaining budget. Summaries are additionally checked structurally — that they name a
-supplied case and cite a supplied page range — never on wording or an exact citation count.
+the route's remaining budget. Summaries are additionally checked for
+valid structured output with passage IDs resolved to server-owned source references; prose
+accuracy is not evaluated by this smoke check.
 
 `--report <path>` writes a machine-readable result recording the resolved model, effort, limits,
 latency, finish reasons, and token accounting, plus a hash of the prompt rather than its text.
@@ -214,13 +215,16 @@ Groundwork for a larger corpus; not used by the public deployment. Add `PINECONE
 `.env.local`, then upload the committed vectors (nothing is re-embedded):
 
 ```bash
-npm run index:pinecone              # creates the index on first run, then replaces this corpus's namespace
+npm run index:pinecone              # creates the index on first run, then upserts this corpus's namespace
 npm run index:pinecone -- --prune   # also delete namespaces left by earlier corpus builds
 ```
 
 The script creates a serverless cosine index (`legal-chunks`, aws/us-east-1 by default, the only
-region on the free plan), waits until every vector is queryable, and checks that Pinecone ranks
-three probe vectors exactly as the local scan does. Then set `SEARCH_BACKEND=pinecone`.
+region on the free plan), waits for the expected vector count, and checks three probe vectors
+for known unique IDs, cosine scores within 0.0005 of the local scan, and top-k coverage and
+ordering within that tolerance. Near ties may reorder; exact order is reported, not required.
+These three probes are an integrity smoke check, not a relevance benchmark. Re-uploading the
+same corpus upserts without first clearing its active namespace. Then set `SEARCH_BACKEND=pinecone`.
 
 Vectors are stored in a namespace derived from the corpus digest and the embedding model, so after
 a `build:index` that changes either, semantic search refuses to run until `index:pinecone` is re-run
@@ -397,3 +401,9 @@ concurrence as the Court's holding. It remains generated text requiring source v
 The guide receives trusted runtime backend configuration plus compact untrusted search context;
 the browser omits full passage arrays before sending a chat request. Zero full-text matches show
 a visible explanation and an action to retry the completed query using semantic search.
+
+Summary citation metadata is generated from server-retrieved passages. The model returns JSON
+paragraphs and passage IDs; invalid IDs or inline page citations cause a safe error. Numbered
+source references retain each original PDF range, opinion label and source link separately.
+This validates reference identity, not the truth of every generated claim. Pinecone host
+discovery and query share one total timeout, including response-body consumption.

@@ -6,8 +6,8 @@
  * Nothing is re-embedded: the vectors come from data/search/embeddings.json, loaded through the
  * same validated reader the application uses, so a stale or mixed artifact set is refused here
  * before it can be uploaded. Creates the index on first run (serverless, cosine, the manifest's
- * dimensions), replaces the namespace for this corpus, waits until every vector is queryable, and
- * then checks that a few corpus vectors find themselves.
+ * dimensions), upserts into the content-addressed namespace, waits until every vector is
+ * queryable, and checks candidate scores with a Float32 tolerance.
  *
  * Re-run it after every `npm run build:index` that changes the corpus or the embedding model:
  * the namespace name is derived from both, so the runtime refuses to search until you do.
@@ -18,7 +18,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readLocalIndex } from "@/lib/search/localIndex";
-import { searchEmbeddings } from "@/lib/search/semanticSearch";
+import { verifyVectorProbe } from "@/lib/pinecone/probe";
 import { namespaceFor } from "@/lib/pinecone/search";
 import { DEFAULT_PINECONE_CLOUD, DEFAULT_PINECONE_REGION, describeIndex, PINECONE_CONTROL_URL, PineconeError, pineconeConfig, pineconeRequest, queryVectors, resolveHost, type PineconeConfig, type PineconeIndexDescription } from "@/lib/pinecone/client";
 import { loadEnvFiles } from "./lib/env";
@@ -65,12 +65,9 @@ async function main(): Promise<number> {
   const host = `https://${await resolveHost(config, TIMEOUT_MS)}`;
   console.log(`Index ${config.indexName} at ${host}\nNamespace ${namespace} (corpus ${index.manifest.corpusSha256.slice(0, 12)}…, ${index.manifest.embedding.model})`);
 
-  // Replace rather than merge, so a chunk removed from the corpus cannot linger as a match.
-  try {
-    await pineconeRequest(config, `${host}/vectors/delete`, { method: "POST", body: { namespace, deleteAll: true } }, TIMEOUT_MS);
-  } catch (error) {
-    if (!(error instanceof PineconeError && error.status === 404)) throw error;
-  }
+  // The namespace already identifies the exact corpus and embedding configuration. Removed
+  // chunks change that fingerprint. Re-running an unchanged upload is therefore an idempotent
+  // upsert; clearing an active namespace first would create an avoidable outage on upload failure.
 
   for (let start = 0; start < docCount; start += UPSERT_BATCH) {
     const vectors = index.documents.slice(start, start + UPSERT_BATCH).map((document, offset) => {
@@ -90,15 +87,17 @@ async function main(): Promise<number> {
     stats = await pineconeRequest<IndexStats>(config, `${host}/describe_index_stats`, { method: "POST", body: {} }, TIMEOUT_MS);
   }
   console.log(`All ${docCount} vectors are queryable.`);
+  if (stats.namespaces?.[namespace]?.vectorCount !== docCount) throw new Error("The corpus namespace contains unexpected extra vectors. Inspect it before switching deployments.");
 
-  // Each probe must rank identically to the in-process scan, top three by chunk.
+  // Near ties may reorder equally useful chunks. Verify IDs, counts, scores and the local top-k
+  // score threshold, instead of treating exact ordering on three probes as a quality benchmark.
   for (const row of [0, Math.floor(docCount / 2), docCount - 1]) {
     const probe = Array.from(data.subarray(row * dimensions, (row + 1) * dimensions));
-    const remote = (await queryVectors(config, namespace, probe, 3, TIMEOUT_MS)).map((match) => match.id);
-    const local = searchEmbeddings(index.embeddings, probe, 3).map((entry) => index.documents[entry.index].chunkId);
-    if (remote.join() !== local.join()) throw new Error(`Probe ${index.documents[row].chunkId}: Pinecone ranked ${remote.join(", ")}, local scan ranked ${local.join(", ")}.`);
+    const remote = await queryVectors(config, namespace, probe, 3, TIMEOUT_MS);
+    const verified = verifyVectorProbe(index, probe, remote, 3);
+    console.log(`  probe ${index.documents[row].chunkId}: scores within ${verified.scoreTolerance}; exact order ${verified.exactOrderMatch}`);
   }
-  console.log("Self-check passed: Pinecone matches the local scan on 3 probes.");
+  console.log("Self-check passed: candidate coverage and cosine scores verified on 3 probes. This is not a relevance benchmark.");
 
   const stale = Object.keys(stats.namespaces ?? {}).filter((name) => name !== namespace);
   if (stale.length > 0 && process.argv.includes("--prune")) {

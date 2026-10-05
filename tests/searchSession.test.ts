@@ -1,16 +1,18 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SearchSession, type CompletedSearch, type SearchSessionSink } from "../src/lib/ui/searchSession";
 import type { CaseResult } from "../src/lib/search/types";
+import type { SummarySource } from "../src/lib/chat/summaryTypes";
 
 /** The component's state, recorded rather than rendered. Every assertion below is about what the
  *  page would be showing, not about how the module is written. */
 function sink() {
-  const state = { loading: false, error: "", completed: undefined as CompletedSearch | undefined, summary: "", summaryError: "", summaryLoading: false };
+  const state = { loading: false, error: "", completed: undefined as CompletedSearch | undefined, summary: "", summarySources: [] as SummarySource[], summaryError: "", summaryLoading: false };
   const api: SearchSessionSink = {
     setLoading: (value) => { state.loading = value; },
     setError: (value) => { state.error = value; },
     setCompletedSearch: (value) => { state.completed = value; },
     setSummary: (value) => { state.summary = value; },
+    setSummarySources: (value) => { state.summarySources = value; },
     setSummaryError: (value) => { state.summaryError = value; },
     setSummaryLoading: (value) => { state.summaryLoading = value; },
   };
@@ -27,7 +29,8 @@ function defer(): Deferred {
 
 const CASE: CaseResult = { rank: 1, caseId: "burlington_white", caseName: "Burlington Northern v. White", citation: "548 U.S. 53", pageStart: 1, pageEnd: 2, bestPassage: "passage", method: "HYBRID", passages: [] };
 const searchBody = (mock = false) => new Response(JSON.stringify({ results: [CASE], mock }), { status: 200 });
-const summaryBody = (text: string) => new Response(JSON.stringify({ summary: text }), { status: 200 });
+const SOURCE: SummarySource = { id: 1, caseName: CASE.caseName, citation: CASE.citation, pageStart: 1, pageEnd: 2 };
+const summaryBody = (text: string) => new Response(JSON.stringify({ summary: text, sources: [SOURCE] }), { status: 200 });
 
 /** Queues one deferred per request, keyed by route, so a test can settle A after B has started. */
 function router() {
@@ -64,8 +67,14 @@ describe("search and summary sequencing", () => {
     routes.summarize[0].resolve(summaryBody("grounded synthesis"));
     await summarizing;
     expect(state.summary).toBe("grounded synthesis");
+    expect(state.summarySources).toEqual([SOURCE]);
     expect(state.summaryError).toBe("");
     expect(state.summaryLoading).toBe(false);
+    const replacement = session.search("replacement query", "FULL_TEXT");
+    expect(state.summarySources).toEqual([]);
+    expect(state.summary).toBe("");
+    routes.search[1].resolve(searchBody());
+    await replacement;
   });
 
   // The defect: A's summary resolved after B's results were on screen and wrote itself under them.
@@ -89,6 +98,7 @@ describe("search and summary sequencing", () => {
     await summaryA;
 
     expect(state.summary).toBe("");
+    expect(state.summarySources).toEqual([]);
     expect(state.summaryError).toBe("");
     expect(state.summaryLoading).toBe(false);
   });

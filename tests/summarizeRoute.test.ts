@@ -33,14 +33,16 @@ describe.sequential("research summary endpoint", () => {
   it("retrieves server-side rather than trusting passages posted by the caller", async () => {
     process.env.OPENAI_API_KEY = "test-key";
     process.env.MOCK_SEARCH = "true";
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: "grounded summary" } }] }), { status: 200 }));
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ blocks: [{ text: "grounded summary", citations: [1] }] }) } }] }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
     // A caller-supplied passage must not appear in the prompt: the request schema has no field
     // for one, and the route re-runs retrieval itself.
     const response = await summarize(post({ query: "but-for causation", queryType: "FULL_TEXT", results: [{ bestPassage: "INJECTED TEXT" }] }));
     expect(response.status).toBe(200);
-    const payload = await response.json() as { summary: string; cases: Array<{ caseName: string }> };
-    expect(payload.summary).toBe("grounded summary");
+    const payload = await response.json() as { summary: string; sources: Array<{ id: number; caseName: string; pageStart: number }>; cases: Array<{ caseName: string }> };
+    expect(payload.summary).toBe("grounded summary [1]");
+    expect(payload.sources[0]).toMatchObject({ id: 1, caseName: payload.cases[0].caseName });
+    expect(payload.sources[0].pageStart).toBeGreaterThan(0);
     expect(payload.cases.length).toBeGreaterThan(0);
     const body = JSON.parse(String((fetchMock.mock.calls[0] as [string, RequestInit])[1].body)) as { messages: Array<{ content: string }> };
     expect(body.messages[1].content).not.toContain("INJECTED TEXT");
@@ -59,6 +61,19 @@ describe.sequential("research summary endpoint", () => {
     const payload = await response.json() as { error?: string; summary?: string };
     expect(payload.summary).toBeUndefined();
     expect(payload.error).toBeTruthy();
+  });
+
+  it("returns a safe error instead of exposing prose with an invented source ID", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    process.env.MOCK_SEARCH = "true";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      choices: [{ message: { content: JSON.stringify({ blocks: [{ text: "UNVERIFIED MODEL CLAIM", citations: [99] }] }) } }],
+    }), { status: 200 })));
+    const response = await summarize(post({ query: "but-for causation", queryType: "FULL_TEXT" }));
+    expect(response.status).toBe(503);
+    const payload = await response.json();
+    expect(payload).toEqual({ error: "The summary could not be verified against its source references. Try again." });
+    expect(JSON.stringify(payload)).not.toContain("UNVERIFIED MODEL CLAIM");
   });
 });
 

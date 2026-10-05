@@ -4,6 +4,8 @@ import { llmProvider } from "@/lib/llm/openai";
 import { LlmServiceError } from "@/lib/llm/provider";
 import type { CaseResult, OpinionSection } from "@/lib/search/types";
 import { opinionAttribution } from "@/lib/search/opinionLabels";
+import { z } from "zod";
+import type { LegalSummary, SummarySource } from "./summaryTypes";
 
 export class SummaryServiceError extends Error {
   constructor(public status: number, message: string) { super(message); }
@@ -14,8 +16,8 @@ export class SummaryServiceError extends Error {
 export const SUMMARY_SYSTEM_PROMPT = [
   "You summarise retrieved U.S. Supreme Court opinion passages for a legal researcher.",
   "Use only the passages supplied below. Do not rely on outside knowledge of these cases, and do not introduce cases that are not in the passages.",
-  "Name each case you rely on and cite its page range exactly as given, with its numbered passage ID [n]. Keep every range separate: never merge adjacent or overlapping ranges into a broader span, and never invent a pinpoint page.",
-  "All supplied page ranges are PDF page numbers, not U.S. Reports or slip-opinion printed page numbers; label citations as PDF pages.",
+  'Return only a JSON object with this shape: {"blocks":[{"text":"A concise paragraph naming the case and explaining the supplied evidence.","citations":[1]}]}. Use at most six blocks. Each citations array contains only the numbered passage IDs supporting that block. An empty array is allowed only for a limitation of the retrieved evidence.',
+  "Do not put citation markers, page numbers, page ranges, or source URLs in text. The application renders numbered references and exact PDF page ranges from the supplied source metadata. Never merge ranges or invent pinpoint pages. Supplied ranges are PDF pages, not reporter pages.",
   "Respect the opinion-section attribution supplied with each passage. Attribute a dissent or concurrence to its author, never to the Court's holding. A syllabus is a headnote, not the Court's opinion. Counsel and front matter are not judicial reasoning.",
   "For mixed sections, page-level boundaries may overlap: identify the speaker from the passage text before attributing a statement. If the speaker is unclear or the section is unclassified, say so rather than assuming majority authority.",
   "Only state a holding as verified when a supplied Court-opinion passage supports it directly. A dissent's description of the majority, or a syllabus alone, does not independently verify that holding; explain that limitation.",
@@ -29,7 +31,7 @@ export const SUMMARY_SYSTEM_PROMPT = [
  *
  *  Round-robin rather than case-by-case: a 101-chunk opinion would otherwise consume the whole
  *  budget and the summary would silently cover one case instead of five. */
-type SummaryPassage = { caseName: string; citation: string; pageStart: number; pageEnd: number; text: string; opinionSections?: OpinionSection[] };
+type SummaryPassage = { caseName: string; citation: string; pageStart: number; pageEnd: number; text: string; opinionSections?: OpinionSection[]; sourceUrl?: string };
 export function selectPassages(results: CaseResult[]): SummaryPassage[] {
   const cases = results.slice(0, SUMMARY_MAX_CASES);
   const selected: SummaryPassage[] = [];
@@ -38,7 +40,7 @@ export function selectPassages(results: CaseResult[]): SummaryPassage[] {
     for (const result of cases) {
       const passage = result.passages[round];
       if (!passage || selected.length >= SUMMARY_MAX_PASSAGES) continue;
-      selected.push({ caseName: result.caseName, citation: result.citation, pageStart: passage.pageStart, pageEnd: passage.pageEnd, text: passage.chunkText.slice(0, SUMMARY_PASSAGE_CHARS), opinionSections: passage.opinionSections });
+      selected.push({ caseName: result.caseName, citation: result.citation, pageStart: passage.pageStart, pageEnd: passage.pageEnd, text: passage.chunkText.slice(0, SUMMARY_PASSAGE_CHARS), opinionSections: passage.opinionSections, sourceUrl: passage.sourceUrl ?? result.sourceUrl });
     }
   }
   return selected;
@@ -49,18 +51,51 @@ export function buildSummaryPrompt(question: string, results: CaseResult[]): str
   return `<research_question>\n${question}\n</research_question>\n\n<retrieved_passages>\n${passages.join("\n\n")}\n</retrieved_passages>`;
 }
 
+const draftSchema = z.object({ blocks: z.array(z.object({
+  text: z.string().trim().min(1).max(6000),
+  citations: z.array(z.number().int().positive()).max(SUMMARY_MAX_PASSAGES),
+}).strict()).min(1).max(6) }).strict();
+
+/** References come from server retrieval, never from model-authored metadata. This validates
+ * citation identity and presentation; it cannot establish that every prose claim is true. */
+export function resolveSummaryDraft(raw: string, results: CaseResult[]): LegalSummary {
+  const invalid = () => new SummaryServiceError(503, "The summary could not be verified against its source references. Try again.");
+  let json: unknown;
+  try { json = JSON.parse(raw); } catch { throw invalid(); }
+  const draft = draftSchema.safeParse(json);
+  if (!draft.success) throw invalid();
+  const passages = selectPassages(results);
+  const used = new Set<number>();
+  const paragraphs = draft.data.blocks.map((block) => {
+    // Page references in model prose would bypass the deterministic source list. Reject them
+    // rather than silently displaying the merged ranges found during browser QA.
+    if (/\[\s*\d+\s*\]|\b(?:PDF\s+)?(?:pages?|pp?\.?)\s*\d|https?:\/\//i.test(block.text)) throw invalid();
+    const ids = [...new Set(block.citations)];
+    for (const id of ids) { if (id > passages.length) throw invalid(); used.add(id); }
+    return `${block.text}${ids.length ? ` ${ids.map((id) => `[${id}]`).join(" ")}` : ""}`;
+  });
+  if (used.size === 0) throw invalid();
+  const sources: SummarySource[] = [...used].sort((a, b) => a - b).map((id) => {
+    const { text: _text, ...source } = passages[id - 1];
+    void _text;
+    return { id, ...source };
+  });
+  return { summary: paragraphs.join("\n\n"), sources };
+}
+
 /**
  * Generate a grounded research summary from already-retrieved passages.
  *
  * Never called by search. The route behind it runs only when a visitor clicks the action, which
  * is what keeps ordinary retrieval free of LLM cost.
  */
-export async function generateLegalSummary(question: string, results: CaseResult[], deadlineAt?: number): Promise<string> {
+export async function generateLegalSummary(question: string, results: CaseResult[], deadlineAt?: number): Promise<LegalSummary> {
   const provider = llmProvider();
   if (!provider) throw new SummaryServiceError(503, "Research summaries are not configured on this deployment. Search results remain available.");
   if (results.length === 0) throw new SummaryServiceError(400, "There are no retrieved passages to summarise.");
   try {
-    return await provider.complete([{ role: "system", content: SUMMARY_SYSTEM_PROMPT }, { role: "user", content: buildSummaryPrompt(question, results) }], { maxOutputTokens: MAX_SUMMARY_OUTPUT_TOKENS, timeoutMs: budgetFor(SUMMARY_TIMEOUT_MS, deadlineAt) });
+    const raw = await provider.complete([{ role: "system", content: SUMMARY_SYSTEM_PROMPT }, { role: "user", content: buildSummaryPrompt(question, results) }], { maxOutputTokens: MAX_SUMMARY_OUTPUT_TOKENS, timeoutMs: budgetFor(SUMMARY_TIMEOUT_MS, deadlineAt) });
+    return resolveSummaryDraft(raw, results);
   } catch (error) {
     if (error instanceof DeadlineExceededError) throw new SummaryServiceError(504, "The request ran out of time before a summary could be generated.");
     if (error instanceof LlmServiceError) throw new SummaryServiceError(error.status === 429 ? 429 : 503, error.status === 429 ? "The summary service is busy. Try again shortly." : "The summary service is temporarily unavailable.");

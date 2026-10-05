@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildSummaryPrompt, generateLegalSummary, selectPassages } from "../src/lib/chat/summary";
+import { buildSummaryPrompt, generateLegalSummary, resolveSummaryDraft, selectPassages } from "../src/lib/chat/summary";
 import { SUMMARY_MAX_CASES, SUMMARY_MAX_PASSAGES, SUMMARY_PASSAGE_CHARS } from "../src/lib/limits";
 import type { CaseResult, SearchChunk } from "../src/lib/search/types";
 
@@ -43,16 +43,39 @@ describe("research summary grounding inputs", () => {
 
   it("instructs the model to stay inside the passages and give no legal advice", async () => {
     process.env.OPENAI_API_KEY = "test-key";
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: "grounded" } }] }), { status: 200 }));
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ blocks: [{ text: "grounded", citations: [1] }] }) } }] }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
-    await expect(generateLegalSummary("Does but-for causation apply?", [caseResult("nassar", [chunk("nassar", 1)])])).resolves.toBe("grounded");
+    await expect(generateLegalSummary("Does but-for causation apply?", [caseResult("nassar", [chunk("nassar", 1)])])).resolves.toMatchObject({ summary: "grounded [1]", sources: [{ id: 1, pageStart: 1, pageEnd: 2 }] });
     const body = JSON.parse(String((fetchMock.mock.calls[0] as [string, RequestInit])[1].body)) as { messages: Array<{ role: string; content: string }> };
     expect(body.messages.map((message) => message.role)).toEqual(["system", "user"]);
     expect(body.messages[0].content).toContain("Use only the passages supplied");
     expect(body.messages[0].content).toContain("never give personalised legal advice");
-    expect(body.messages[0].content).toContain("cite its page range");
+    expect(body.messages[0].content).toContain("The application renders numbered references");
     // The question must not reach the trusted system turn.
     expect(body.messages[0].content).not.toContain("but-for causation apply");
+  });
+
+  it("keeps overlapping ranges separate and resolves authors and links from server sources", () => {
+    const passages = [chunk("nassar", 42), chunk("nassar", 45)];
+    passages[0].pageEnd = 46;
+    passages[0].sourceUrl = "https://example.com/nassar.pdf";
+    passages[0].opinionSections = [{ type: "dissent", author: "Ginsburg", pageStart: 31, pageEnd: 50 }];
+    const rendered = resolveSummaryDraft(JSON.stringify({ blocks: [{ text: "Ginsburg's dissent discusses causation.", citations: [2, 1, 2] }] }), [caseResult("nassar", passages)]);
+    expect(rendered.summary).toBe("Ginsburg's dissent discusses causation. [2] [1]");
+    expect(rendered.sources.map((source) => [source.id, source.pageStart, source.pageEnd])).toEqual([[1, 42, 46], [2, 45, 46]]);
+    expect(rendered.sources[0]).toMatchObject({ sourceUrl: passages[0].sourceUrl, opinionSections: passages[0].opinionSections });
+    expect(rendered.sources[0]).not.toHaveProperty("text");
+  });
+
+  it.each([
+    "plain unverified prose",
+    JSON.stringify({ blocks: [{ text: "Holding", citations: [99] }] }),
+    JSON.stringify({ blocks: [{ text: "PDF pages 42–48 show causation.", citations: [1] }] }),
+    JSON.stringify({ blocks: [{ text: "Holding [9]", citations: [1] }] }),
+    JSON.stringify({ blocks: [{ text: "Holding", citations: [] }] }),
+    JSON.stringify({ blocks: [{ text: "Holding", citations: [1], sourceUrl: "https://attacker.example" }] }),
+  ])("rejects malformed or unverifiable reference output", (raw) => {
+    expect(() => resolveSummaryDraft(raw, [caseResult("nassar", [chunk("nassar", 1)])])).toThrow(/could not be verified/);
   });
 
   it("refuses without credentials or without retrieved passages", async () => {

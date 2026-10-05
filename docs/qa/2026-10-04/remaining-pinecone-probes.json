@@ -1,0 +1,25 @@
+{
+  "kind": "read-only-pinecone-integrity-smoke",
+  "generatedAt": "2026-10-05T04:44:17.232Z",
+  "namespace": "corpus-366af0e62748a64d344c7401",
+  "vectorCount": 234,
+  "probes": [
+    {
+      "chunkId": "burlington_white__0001",
+      "exactOrderMatch": true,
+      "scoreTolerance": 0.0005
+    },
+    {
+      "chunkId": "kasten_saint_gobain__0005",
+      "exactOrderMatch": true,
+      "scoreTolerance": 0.0005
+    },
+    {
+      "chunkId": "bostock_clayton__0101",
+      "exactOrderMatch": true,
+      "scoreTolerance": 0.0005
+    }
+  ],
+  "passed": true,
+  "remoteMutations": false
+}

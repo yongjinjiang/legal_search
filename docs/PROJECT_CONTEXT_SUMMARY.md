@@ -125,7 +125,10 @@ citation-grounded answer generation.
 
 The optional research summary re-runs retrieval server-side, selects at most eight passages
 round-robin across at most five cases, and generates only after an explicit click. Its prompt
-carries section attribution, numbered passage IDs, and PDF page ranges that must be cited separately without merging. Dissent and concurrence must be attributed to
+carries section attribution and numbered passage IDs. The model returns JSON paragraphs
+and supporting IDs; the server validates them and supplies the original PDF ranges and links
+for a separate source list. Inline page citations or invalid IDs fail safely. These checks
+validate source identity, not the truth of generated claims. Dissent and concurrence must be attributed to
 their authors; a syllabus or dissent alone cannot verify the Court's holding. Mixed or unknown
 sections require explicit uncertainty. These controls improve grounding but do not replace
 verification against the original PDF. A successful search with no matches has a visible empty

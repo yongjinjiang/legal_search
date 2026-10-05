@@ -1,5 +1,6 @@
 import { readError } from "@/lib/errorMessage";
 import type { CaseResult, QueryType, SearchState } from "@/lib/search/types";
+import type { LegalSummary, SummarySource } from "@/lib/chat/summaryTypes";
 
 export type CompletedSearch = SearchState & { mock: boolean };
 
@@ -10,6 +11,7 @@ export type SearchSessionSink = {
   setError(value: string): void;
   setCompletedSearch(value: CompletedSearch | undefined): void;
   setSummary(value: string): void;
+  setSummarySources(value: SummarySource[]): void;
   setSummaryError(value: string): void;
   setSummaryLoading(value: boolean): void;
 };
@@ -66,6 +68,7 @@ export class SearchSession {
     this.sink.setLoading(true);
     this.sink.setError("");
     this.sink.setSummary("");
+    this.sink.setSummarySources([]);
     this.sink.setSummaryError("");
     this.sink.setSummaryLoading(false);
     try {
@@ -97,12 +100,14 @@ export class SearchSession {
     this.sink.setSummaryLoading(true);
     this.sink.setSummaryError("");
     this.sink.setSummary("");
+    this.sink.setSummarySources([]);
     try {
       const response = await fetch("/api/summarize", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: target.query, queryType: target.method }), signal: controller.signal });
       if (!response.ok) throw new Error(await readError(response, "The research summary could not be generated."));
-      const data = await response.json() as { summary: string };
+      const data = await response.json() as LegalSummary;
       if (!this.isCurrentSummary(id, search)) return;
       this.sink.setSummary(data.summary);
+      this.sink.setSummarySources(data.sources ?? []);
     } catch (error) {
       if (!this.isCurrentSummary(id, search)) return;
       this.sink.setSummaryError(error instanceof Error ? error.message : "The research summary could not be generated.");

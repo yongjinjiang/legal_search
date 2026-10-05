@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     const deadlineAt = deadlineIn(LLM_ROUTE_BUDGET_MS);
     const { results } = await searchCases(body.data.query, body.data.queryType, undefined, deadlineAt);
     const summary = await generateLegalSummary(body.data.query, results, deadlineAt);
-    return NextResponse.json({ summary, cases: results.map((result) => ({ caseName: result.caseName, citation: result.citation })) });
+    return NextResponse.json({ ...summary, cases: results.map((result) => ({ caseName: result.caseName, citation: result.citation })) });
   } catch (error) {
     if (error instanceof SearchServiceError || error instanceof SummaryServiceError) return NextResponse.json({ error: error.message }, { status: error.status });
     console.error("[summarize] request failed", error);

@@ -1,0 +1,43 @@
+{
+  "desktop": {
+    "scrollWidth": 1280,
+    "width": 1280
+  },
+  "refs": [
+    {
+      "href": "https://tile.loc.gov/storage-services/service/ll/usrep/usrep570/usrep570338/usrep570338.pdf#page=46",
+      "text": "[1] University of Texas Southwestern Medical Center v. Nassar · 570 U.S. 338 (2013)PDF pages 46–48Dissent — GinsburgOpen source PDF ↗"
+    },
+    {
+      "href": "https://tile.loc.gov/storage-services/service/ll/usrep/usrep570/usrep570338/usrep570338.pdf#page=45",
+      "text": "[3] University of Texas Southwestern Medical Center v. Nassar · 570 U.S. 338 (2013)PDF pages 45–46Dissent — GinsburgOpen source PDF ↗"
+    },
+    {
+      "href": "https://tile.loc.gov/storage-services/service/ll/usrep/usrep570/usrep570338/usrep570338.pdf#page=2",
+      "text": "[4] University of Texas Southwestern Medical Center v. Nassar · 570 U.S. 338 (2013)PDF pages 2–3Mixed sections: Syllabus (headnote) / Counsel / front matterOpen source PDF ↗"
+    },
+    {
+      "href": "https://tile.loc.gov/storage-services/service/ll/usrep/usrep570/usrep570338/usrep570338.pdf#page=8",
+      "text": "[5] University of Texas Southwestern Medical Center v. Nassar · 570 U.S. 338 (2013)PDF pages 8–9Court opinion — KennedyOpen source PDF ↗"
+    },
+    {
+      "href": "https://tile.loc.gov/storage-services/service/ll/usrep/usrep570/usrep570338/usrep570338.pdf#page=42",
+      "text": "[6] University of Texas Southwestern Medical Center v. Nassar · 570 U.S. 338 (2013)PDF pages 42–43Dissent — GinsburgOpen source PDF ↗"
+    },
+    {
+      "href": "https://tile.loc.gov/storage-services/service/ll/usrep/usrep570/usrep570338/usrep570338.pdf#page=23",
+      "text": "[8] University of Texas Southwestern Medical Center v. Nassar · 570 U.S. 338 (2013)PDF pages 23–24Court opinion — KennedyOpen source PDF ↗"
+    }
+  ],
+  "summary": "University of Texas Southwestern Medical Center v. Nassar — The supplied syllabus and majority opinion (Kennedy) state directly that Title VII retaliation claims must be proved using traditional but‑for causation: the plaintiff must show the adverse action would not have occurred in the absence of the alleged retaliatory motive. The syllabus frames this as rejecting the lessened, motivating‑factor test of § 2000e‑2(m) for retaliation, and the opinion explains the textual and structural bases for that conclusion. [4] [8]\n\nDissent (Ginsburg) — The supplied dissenting passages (Ginsburg) directly state that the Court’s adoption of a but‑for requirement for retaliation is wrong. The dissent argues that the word “because” does not inevitably require but‑for causation, points to common‑law and Restatement treatment of multiple sufficient causes and overdetermination, and criticizes the majority for rejecting application of the motivating‑factor/Price Waterhouse framework to retaliation claims. [1] [3] [6]\n\nWhat the passages permit us to infer — In light of the majority passages, it is reasonable to infer that, after Nassar, plaintiffs alleging Title VII retaliation cannot prevail by showing only that retaliation was a motivating factor; they must show but‑for causation. This inference is based on the majority's explicit rejection of § 2000e‑2(m)'s motivating‑factor test for retaliation as described in the syllabus and opinion. [4] [8]\n\nLimitations of the retrieved evidence — The supplied material includes the syllabus, excerpts of the majority opinion, and excerpts of the dissent, but it does not include the full majority opinion or any post‑Nassar authorities applying Nassar. The dissent’s characterization cannot, by itself, establish the law; only the majority passages are direct authority for the holding described above. The passages do show that a Fifth Circuit decision had earlier treated retaliation differently, but the excerpts here do not provide the full reasoning of lower courts or later treatment of Nassar. [5]",
+  "url": "http://127.0.0.1:3000/#search",
+  "mobile": {
+    "scrollWidth": 390,
+    "sourceCount": 6,
+    "width": 390
+  },
+  "replacementSearch": {
+    "emptyVisible": true,
+    "staleSummaryCount": 0
+  }
+}

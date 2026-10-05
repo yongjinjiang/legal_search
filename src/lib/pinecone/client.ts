@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { fetchWithTimeout } from "@/lib/http";
+import { fetchWithTimeout, HttpTimeoutError } from "@/lib/http";
+import { remainingMs } from "@/lib/deadline";
 
 // Optional vector store for the semantic half of retrieval. The public deployment does not use
 // it: the committed artifacts in data/search/ are still the source of truth, and Pinecone holds
@@ -72,7 +73,7 @@ export function describeIndex(config: PineconeConfig, timeoutMs: number): Promis
 // control-plane failure does not poison the instance.
 const hosts = new Map<string, Promise<string>>();
 
-export function resolveHost(config: PineconeConfig, timeoutMs: number): Promise<string> {
+export async function resolveHost(config: PineconeConfig, timeoutMs: number): Promise<string> {
   if (config.host) return Promise.resolve(config.host.replace(/^https?:\/\//, "").replace(/\/$/, ""));
   let host = hosts.get(config.indexName);
   if (!host) {
@@ -80,7 +81,16 @@ export function resolveHost(config: PineconeConfig, timeoutMs: number): Promise<
     host.catch(() => hosts.delete(config.indexName));
     hosts.set(config.indexName, host);
   }
-  return host;
+  // Concurrent callers share discovery, but each caller owns its waiting allowance. Timing out
+  // a short waiter must not abort discovery that another request still needs.
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([host, new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new HttpTimeoutError(timeoutMs)), timeoutMs);
+    })]);
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
 }
 
 export function resetPineconeHostCache(): void { hosts.clear(); }
@@ -88,8 +98,11 @@ export function resetPineconeHostCache(): void { hosts.clear(); }
 export type PineconeMatch = { id: string; score: number };
 
 export async function queryVectors(config: PineconeConfig, namespace: string, vector: number[], topK: number, timeoutMs: number): Promise<PineconeMatch[]> {
+  const deadlineAt = Date.now() + timeoutMs;
   const host = await resolveHost(config, timeoutMs);
-  const body = await pineconeRequest<{ matches?: Array<{ id?: unknown; score?: unknown }> }>(config, `https://${host}/query`, { method: "POST", body: { namespace, vector, topK, includeValues: false, includeMetadata: false } }, timeoutMs);
+  const remaining = remainingMs(deadlineAt);
+  if (remaining <= 0) throw new HttpTimeoutError(timeoutMs);
+  const body = await pineconeRequest<{ matches?: Array<{ id?: unknown; score?: unknown }> }>(config, `https://${host}/query`, { method: "POST", body: { namespace, vector, topK, includeValues: false, includeMetadata: false } }, remaining);
   if (!Array.isArray(body.matches)) throw new PineconeError(502, "Pinecone returned a query response without matches.");
   return body.matches.map((match) => {
     if (typeof match.id !== "string" || typeof match.score !== "number" || !Number.isFinite(match.score)) throw new PineconeError(502, "Pinecone returned a malformed match.");

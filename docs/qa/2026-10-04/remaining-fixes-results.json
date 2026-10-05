@@ -1,0 +1,52 @@
+{
+  "scope": [
+    "original QA issue 5: Pinecone combined discovery/query deadline",
+    "original QA issue 6: tolerance-based upload integrity probes and matching docs",
+    "idempotent re-upload without clearing active namespace",
+    "deterministic summary source references",
+    "Next.js 16.3.8 and brace-expansion dependency patches"
+  ],
+  "validation": {
+    "tests": {
+      "passed": 239,
+      "files": 31
+    },
+    "lint": "passed",
+    "typecheck": "passed",
+    "productionBuild": "passed; Next.js 16.3.8",
+    "liveProvider": "remaining-provider-results.json; three summaries and three guides",
+    "readOnlyPinecone": "remaining-pinecone-probes.json; 234 vectors, three probes",
+    "browser": "remaining-browser-results.json; actual Pinecone search and summary, desktop and 390px mobile"
+  },
+  "dependencyAudit": {
+    "production": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "all": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 5,
+      "critical": 0,
+      "total": 5
+    },
+    "unpatched": {
+      "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+      "package": "braces@3.0.3",
+      "path": "eslint-config-next -> @next/eslint-plugin-next -> fast-glob -> micromatch -> braces",
+      "scope": "development tooling; one advisory propagated across five packages",
+      "patchedVersion": null
+    }
+  },
+  "limitations": [
+    "Structural citation validation does not verify every generated legal claim.",
+    "Malformed model JSON or invalid source IDs return a safe 503; no automatic billed retry.",
+    "The upload/delete/prune workflow was not run against the live Pinecone index.",
+    "The 18-query case-ranking smoke evidence does not establish retrieval relevance for arbitrary questions."
+  ]
+}
